@@ -1,5 +1,9 @@
 GUI für die Konfiguration der 'NE4-MOD-BUS' Sensoren
 
+[![GitLab CI status](https://gitlab.com/RA-GAS-GmbH/ne4_konfig/badges/master/pipeline.svg)](https://gitlab.com/RA-GAS-GmbH/ne4_konfig/pipelines)
+[![Appveyor CI status](https://ci.appveyor.com/api/projects/status/sqhnkrgqba67o4m4/branch/master?svg=true)](https://ci.appveyor.com/project/zzeroo/ne4-konfig/branch/master)
+
+
 # `NE4-MOD-BUS` Konfiguration
 
 # Installation
