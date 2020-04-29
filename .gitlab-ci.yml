@@ -35,7 +35,7 @@ build:stable:
     - cargo build --verbose
 
 test:rustfmt:
-    image: "debian:stable-slim"
+    image: "rust:latest"
     stage: test
     allow_failure: true
     before_script:
