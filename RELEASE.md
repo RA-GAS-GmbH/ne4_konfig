@@ -14,4 +14,4 @@ Dokumentation für den Release Prozess.
 - [] `git checkout master` wechsele in den *master* Branch
 - [] `git merge --no-ff development` merge den lokalen 'development' Branch
 - [] `git tag vN.N.N` Tagge die Version
-- [] `git push`
+- [] `git push --tags`
