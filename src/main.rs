@@ -1,30 +1,21 @@
-extern crate gio;
-extern crate gtk;
-
 use gio::prelude::*;
 use gtk::prelude::*;
 
-use gtk::{Application, ApplicationWindow, Button};
+use gtk::{Application, ApplicationWindow};
+
+mod gui {
+    pub mod gtk3;
+}
 
 fn main() {
     let application = Application::new(
-        Some("com.gaswarnanlagen.ne4-mod-bus.configuration_gui"),
+        Some("com.gaswarnanlagen.ne4-mod-bus.ne4_konfig"),
         Default::default(),
     )
     .expect("failed to initalize GTK application");
 
     application.connect_activate(|app| {
-        let window = ApplicationWindow::new(app);
-        window.set_title("NE4-MOD-BUS - Konfiguration");
-        window.set_default_size(1024, 600);
-
-        let button = Button::new_with_label("Einstellungen");
-        button.connect_clicked(|_| {
-            println!("Einstellungen wurden gewählt!");
-        });
-        window.add(&button);
-
-        window.show_all();
+        gui::gtk3::launch(app);
     });
 
     application.run(&[]);
