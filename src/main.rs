@@ -1,8 +1,8 @@
-extern crate gtk;
 extern crate gio;
+extern crate gtk;
 
-use gtk::prelude::*;
 use gio::prelude::*;
+use gtk::prelude::*;
 
 use gtk::{Application, ApplicationWindow, Button};
 
@@ -10,7 +10,8 @@ fn main() {
     let application = Application::new(
         Some("com.gaswarnanlagen.ne4-mod-bus.configuration_gui"),
         Default::default(),
-    ).expect("failed to initalize GTK application");
+    )
+    .expect("failed to initalize GTK application");
 
     application.connect_activate(|app| {
         let window = ApplicationWindow::new(app);
