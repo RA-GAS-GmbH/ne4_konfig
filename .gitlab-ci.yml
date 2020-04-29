@@ -12,7 +12,7 @@ cache:
 stages:
   - build
   - test
-  # - package
+  - package
 
 before_script:
     - mkdir -pv $APT_CACHE_DIR
@@ -49,3 +49,18 @@ test:rustfmt:
     - cargo build --verbose
     - cargo install rustfmt-nightly
     - cargo fmt -- --check
+
+package:
+    image: "rust:latest"
+    artifacts:
+      paths:
+      # - resources
+      - ne4_konfig
+      - LICENSE
+      - README.md
+      name: "$CI_BUILD_REF_NAME"
+    stage: package
+    script:
+    - cargo update
+    - cargo build --release
+    - cp target/release/ne4_konfig .
