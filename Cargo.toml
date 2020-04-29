@@ -1,5 +1,5 @@
 [package]
-name = "gtk-test-rust"
+name = "ne4_konfig"
 version = "0.1.0"
 authors = ["Stefan Müller <zzeroo> <co@zzeroo.com>"]
 edition = "2018"
