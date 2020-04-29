@@ -29,4 +29,8 @@ apt install libudev-dev libgtk-3-dev
 Die minimale Rust Version ist 1.42.
 
 
+# Entwicklung
+
+Das Projekt wird mit der nightly Rust Version entwickelt. 
+
 [Gitlab CI]: https://docs.gitlab.com/ee/ci/
