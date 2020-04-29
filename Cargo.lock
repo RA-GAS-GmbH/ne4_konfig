@@ -320,6 +320,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "99e85c08494b21a9054e7fe1374a732aeadaff3980b6990b94bfd3a70f690005"
 
 [[package]]
+name = "ne4_konfig"
+version = "0.1.0"
+dependencies = [
+ "gio",
+ "gtk",
+]
+
+[[package]]
 name = "pango"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -386,14 +394,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2bdc6c187c65bca4260c9011c9e3132efe4909da44726bad24cf7572ae338d7f"
 dependencies = [
  "proc-macro2",
-]
-
-[[package]]
-name = "re4_konfig"
-version = "0.1.0"
-dependencies = [
- "gio",
- "gtk",
 ]
 
 [[package]]
