@@ -120,15 +120,15 @@ after_build:
   - if "%PACKAGE%"=="true" ( mkdir share\glib-2.0\schemas )
   - if "%PACKAGE%"=="true" ( cp C:\msys64\mingw%BITS%\share\glib-2.0\schemas\org.gtk.Settings.FileChooser.gschema.xml share\glib-2.0\schemas )
   - if "%PACKAGE%"=="true" ( glib-compile-schemas share\glib-2.0\schemas )
-  - if "%PACKAGE%"=="true" ( 7z a ne4_konfig.zip share )
+  - if "%PACKAGE%"=="true" ( 7z a ne4_konfig-%ARCH%.zip share )
   - if "%PACKAGE%"=="true" ( ldd target\release\ne4_konfig.exe )
   - if "%PACKAGE%"=="true" ( ldd target\release\ne4_konfig.exe | awk -F"[ ]+" "/mingw/{ gsub(/^\t/,\"\",$1); print \"C:\\\\msys64\\\\mingw%BITS%\\\\bin\\\\\"$1 }" | uniq -u > dlls.txt )
-  - if "%PACKAGE%"=="true" ( 7z a ne4_konfig.zip -i@dlls.txt )
-  - if "%PACKAGE%"=="true" ( 7z a ne4_konfig.zip %APPVEYOR_BUILD_FOLDER%\target\release\ne4_konfig.exe )
-  # - if "%PACKAGE%"=="true" ( 7z a ne4_konfig.zip resources )
-  - if "%PACKAGE%"=="true" ( 7z a ne4_konfig.zip README.md )
-  - if "%PACKAGE%"=="true" ( 7z a ne4_konfig.zip LICENSE )
+  - if "%PACKAGE%"=="true" ( 7z a ne4_konfig-%ARCH%.zip -i@dlls.txt )
+  - if "%PACKAGE%"=="true" ( 7z a ne4_konfig-%ARCH%.zip %APPVEYOR_BUILD_FOLDER%\target\release\ne4_konfig.exe )
+  # - if "%PACKAGE%"=="true" ( 7z a ne4_konfig-%ARCH%.zip resources )
+  - if "%PACKAGE%"=="true" ( 7z a ne4_konfig-%ARCH%.zip README.md )
+  - if "%PACKAGE%"=="true" ( 7z a ne4_konfig-%ARCH%.zip LICENSE )
 
 artifacts:
-  - path: ne4_konfig.zip
-    name: NE4_Konfiguration
+  - path: ne4_konfig-%ARCH%.zip
+    name: NE4-MOD-BUS - Konfiguration %ARCH% (Windows %BITS%Bit)

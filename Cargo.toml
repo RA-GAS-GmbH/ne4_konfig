@@ -1,10 +1,16 @@
 [package]
 name = "ne4_konfig"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Stefan Müller <zzeroo> <co@zzeroo.com>"]
+license = "GPL-3.0"
+readme = "README.md"
+repository = "https://gitlab.com/RA-GAS-GmbH/ne4_konfig"
+description = "GUI für die Konfiguration der 'NE4-MOD-BUS' Sensoren"
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[badges]
+appveyor = { repository = "zzeroo/ne4-konfig", service = "gitlab" }
+gitlab = { repository = "RA-GAS-GmbH/ne4_konfig" }
 
 [dependencies]
 
@@ -15,4 +21,3 @@ features = ["v3_16"]
 [dependencies.gio]
 version = ""
 features = ["v2_44"]
-
