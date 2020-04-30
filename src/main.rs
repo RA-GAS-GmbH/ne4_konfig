@@ -3,5 +3,7 @@ mod gui {
 }
 
 fn main() {
+    env_logger::init();
+
     gui::gtk3::launch();
 }
