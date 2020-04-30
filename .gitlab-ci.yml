@@ -53,7 +53,7 @@ package:
       - ne4_konfig
       - LICENSE
       - README.md
-      name: "$CI_BUILD_REF_NAME"
+      name: ne4_konfig-linux-x86_64-"$CI_BUILD_REF_NAME"
     stage: package
     script:
     - cargo update

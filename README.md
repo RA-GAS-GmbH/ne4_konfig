@@ -7,12 +7,18 @@ GUI für die Konfiguration der 'NE4-MOD-BUS' Sensoren
 # `NE4-MOD-BUS` Konfiguration
 
 # Installation
-
 ## Linux
+Ein Archiv mit allen benötigten Dateien wird von der [Gitlab CI] gebildet.
+Siehe: https://gitlab.com/RA-GAS-GmbH/ne4_konfig/-/releases
 
-Die [Gitlab CI] bildet ein Archiv mit allen benötigten Dateien
+## Windows
+Die Windows Releases sind Zip Archive mit allen benötigten Dateien. Diese werden
+von der [Appveyor CI] gebildet.
+Siehe: https://gitlab.com/RA-GAS-GmbH/ne4_konfig/-/releases
+
 
 # Qellcode selber übersetzen
+Die minimale Rust Version ist 1.42.
 
 ## unter Linux
 
@@ -26,11 +32,11 @@ Die Gtk und Udev Bibliotheken können u.a. so installiert werden:
 apt install libudev-dev libgtk-3-dev
 ```
 
-Die minimale Rust Version ist 1.42.
 
 
 # Entwicklung
 
-Das Projekt wird mit der nightly Rust Version entwickelt. 
+Das Projekt wird mit der nightly Rust Version entwickelt.
 
-[Gitlab CI]: https://docs.gitlab.com/ee/ci/
+[Gitlab CI]: https://gitlab.com/RA-GAS-GmbH/ne4_konfig/pipelines
+[Appveyor CI]: https://ci.appveyor.com/project/zzeroo/ne4-konfig
