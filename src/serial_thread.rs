@@ -1,4 +1,4 @@
-use serialport::prelude::*;
+use mio_serial::*;
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -22,8 +22,8 @@ enum GeneralError {
     Send(SerialCommand),
 }
 
-fn list_ports() -> serialport::Result<Vec<String>> {
-    match serialport::available_ports() {
+fn list_ports() -> mio_serial::Result<Vec<String>> {
+    match mio_serial::available_ports() {
         Ok(ports) => Ok(ports.into_iter().map(|x| x.port_name).collect()),
         Err(e) => Err(e),
     }
@@ -40,7 +40,7 @@ impl SerialThread {
         let (to_port_chan_tx, to_port_chan_rx) = channel();
 
         thread::spawn(move || {
-            let mut port: Option<Box<dyn SerialPort>> = None;
+            let mut port: Option<Box<dyn mio_serial::SerialPort>> = None;
 
             let mut settings: SerialPortSettings = Default::default();
 
@@ -57,15 +57,15 @@ impl SerialThread {
                             "Connecting to {} at {} with settings: {:?}",
                             &name, &baud, &settings
                         );
-                        match serialport::open_with_settings(&name, &settings) {
+                        match Serial::from_path(&name, &settings) {
                             Ok(p) => {
-                                port = Some(p);
+                                port = Some(Box::new(p));
                                 from_port_chan_tx
                                     .send(SerialResponse::OpenPortSuccess(name))
                                     .unwrap();
                             }
-                            Err(serialport::Error {
-                                kind: serialport::ErrorKind::NoDevice,
+                            Err(mio_serial::Error {
+                                kind: mio_serial::ErrorKind::NoDevice,
                                 ..
                             }) => {
                                 let err_str = format!(

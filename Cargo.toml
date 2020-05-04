@@ -16,8 +16,8 @@ maintenance = { status = "actively-developed" }
 [dependencies]
 log = "0.4.8"
 env_logger = "0.7.1"
-serialport = "3.3.0"
 glib = "0.9.3"
+mio-serial = "3.3.1"
 
 [dependencies.gtk]
 version = "0.8.1"
