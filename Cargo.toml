@@ -11,10 +11,13 @@ edition = "2018"
 [badges]
 appveyor = { repository = "zzeroo/ne4-konfig", service = "gitlab" }
 gitlab = { repository = "RA-GAS-GmbH/ne4_konfig" }
+maintenance = { status = "actively-developed" }
 
 [dependencies]
-log = "0.4.0"
+log = "0.4.8"
 env_logger = "0.7.1"
+serialport = "3.3.0"
+glib = "0.9.3"
 
 [dependencies.gtk]
 version = "0.8.1"
