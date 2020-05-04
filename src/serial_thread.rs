@@ -14,7 +14,7 @@ pub enum SerialResponse {
     Data(Vec<u8>),
     DisconnectSuccess,
     OpenPortSuccess(String),
-    OpenPortError(String),
+    OpenPortError(std::io::Error),
 }
 
 #[derive(Debug)]
@@ -64,21 +64,9 @@ impl SerialThread {
                                     .send(SerialResponse::OpenPortSuccess(name))
                                     .unwrap();
                             }
-                            Err(mio_serial::Error {
-                                kind: mio_serial::ErrorKind::NoDevice,
-                                ..
-                            }) => {
-                                let err_str = format!(
-                                    "Port '{}' is already in use or dosn't \
-                                                    exist",
-                                    &name
-                                );
-                                let error = SerialResponse::OpenPortError(err_str);
-                                from_port_chan_tx.send(error).unwrap();
-                            }
                             Err(e) => {
                                 from_port_chan_tx
-                                    .send(SerialResponse::OpenPortError(e.description))
+                                    .send(SerialResponse::OpenPortError(e))
                                     .unwrap();
                             }
                         }
