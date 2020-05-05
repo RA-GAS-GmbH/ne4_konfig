@@ -130,5 +130,5 @@ after_build:
   - if "%PACKAGE%"=="true" ( 7z a ne4_konfig-%ARCH%.zip LICENSE )
 
 artifacts:
-  - path: ne4_konfig-%ARCH%.zip
+  - path: ne4_konfig-win%BITS%-%ARCH%.zip
     name: NE4-MOD-BUS - Konfiguration %ARCH% (Windows %BITS%Bit)
