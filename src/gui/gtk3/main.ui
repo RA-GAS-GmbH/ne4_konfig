@@ -166,6 +166,7 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
                 <property name="label" translatable="yes">Sensordaten</property>
               </object>
               <packing>
+                <property name="menu_label">Sensordatem</property>
                 <property name="tab_fill">False</property>
               </packing>
             </child>
@@ -212,6 +213,7 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
                 <property name="label" translatable="yes">erweiterte Einstellungen</property>
               </object>
               <packing>
+                <property name="menu_label">erweiterte Einstellungen</property>
                 <property name="position">1</property>
                 <property name="tab_fill">False</property>
               </packing>
@@ -220,14 +222,7 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
               <placeholder/>
             </child>
             <child type="tab">
-              <object class="GtkLabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-              </object>
-              <packing>
-                <property name="position">2</property>
-                <property name="tab_fill">False</property>
-              </packing>
+              <placeholder/>
             </child>
           </object>
           <packing>
