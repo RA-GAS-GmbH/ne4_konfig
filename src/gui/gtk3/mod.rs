@@ -1,5 +1,5 @@
-use chrono::Utc;
 use crate::serial_thread::{list_ports, SerialResponse, SerialThread};
+use chrono::Utc;
 use gio::prelude::*;
 use glib::{signal_handler_block, signal_handler_unblock};
 use gtk::prelude::*;

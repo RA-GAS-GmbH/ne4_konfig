@@ -34,6 +34,13 @@ build:stable:
     - cargo update
     - cargo build --verbose
 
+build:nightly:
+    image: "rust:nightly"
+    stage: build
+    script:
+    - cargo update
+    - cargo build --verbose
+
 test:rustfmt:
     image: "rust:latest"
     stage: test

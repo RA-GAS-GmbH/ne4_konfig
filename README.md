@@ -18,8 +18,9 @@ Siehe: [Releases]
 
 
 # Qellcode selber übersetzen
-Die minimale Rust Version ist 1.43.0, die nightly Version von Rust wird aber
-auch von der CI getestet und sollte ebenfalls funktionieren.
+Das Projekt nutzt den `stable` Zweig von Rust.
+Die minimal kompatible Rust Version ist 1.43.0, die nightly Version von Rust
+wird aber auch von der CI getestet und sollte ebenfalls funktionieren.
 
 Neben Rust müssen auch die Gtk und Udev Entwicklungs Bibliotheken installiert
 werden.
@@ -28,7 +29,7 @@ werden.
 Die Installation von Rust wird hier beschrieben: https://rustup.rs/
 
 ```bash
-rustup default 1.43.0
+rustup default stable
 ```
 
 Die Gtk und Udev Bibliotheken können u.a. so installiert werden:
@@ -43,15 +44,13 @@ Für Windows ist die Installation von Rust hier beschrieben: https://rustup.rs/
 Wir verwenden unter Windows das Host Tripple `x86_64-pc-windows-gnu`,
 die `stable` Toolchain und das `minimal` Rustup Profil.
 
-```bash
-rustup default 1.43.0-x86_64-pc-windows-gnu
-```
-
 Die Installation der Gtk Bibliotheken wird hier beschrieben: [Compiling Rust + Windows + GTK step-by-step]
 
 # Entwicklung
+Die Entwicklung wird mit dem `stable` Zweig von Rust durchgeführt.
 
-Die Verwendung von `rustfmt` ist zwingend.
+Die Verwendung von `rustfmt` ist zwingend. Für die `cargo fmt` Durchläufe
+verwenden wir ebenfalls den `stable` Zweig von Rust.
 
 ```bash
 rustup component add rustfmt
