@@ -1,7 +1,7 @@
-use tokio_serial::*;
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::thread;
 use std::time::{Duration, Instant};
+use tokio_serial::*;
 
 #[derive(Debug)]
 pub enum SerialCommand {
