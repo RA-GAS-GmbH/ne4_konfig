@@ -54,7 +54,7 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
               </object>
             </child>
             <child>
-              <object class="GtkToggleButton" id="button_connect">
+              <object class="GtkToggleButton" id="toggle_button_connect">
                 <property name="label">gtk-connect</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
