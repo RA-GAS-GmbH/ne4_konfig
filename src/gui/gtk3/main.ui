@@ -18,7 +18,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with ne4_konfig.  If not, see <http://www.gnu.org/licenses/>.
 
-Author: Stefan Müller
+Author: Stefan Müller <s.mueller@zzeroo.com>
 
 -->
 <interface>
@@ -27,7 +27,7 @@ Author: Stefan Müller
   <!-- interface-name ne4_konfig -->
   <!-- interface-description GUI f\303\274r die Konfiguration der 'NE4-MOD-BUS' Sensoren -->
   <!-- interface-copyright 2020 Stefan M\303\274ller for RA-GAS GmbH Kernen i.R. -->
-  <!-- interface-authors Stefan M\303\274ller -->
+  <!-- interface-authors Stefan M\303\274ller <s.mueller@zzeroo.com> -->
   <object class="GtkApplicationWindow" id="window_application">
     <property name="can_focus">False</property>
     <property name="title" translatable="yes">NE4-MOD-BUS - Konfiguration</property>
@@ -48,7 +48,7 @@ Author: Stefan Müller
             <property name="can_focus">False</property>
             <property name="has_subtitle">False</property>
             <child>
-              <object class="GtkComboBox" id="combo_box_ports">
+              <object class="GtkComboBoxText" id="combo_box_text_ports">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
               </object>
@@ -123,35 +123,111 @@ Author: Stefan Müller
           </packing>
         </child>
         <child>
-          <object class="GtkGrid">
+          <object class="GtkNotebook" id="notebook_sensor">
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
+            <property name="can_focus">True</property>
             <child>
-              <placeholder/>
+              <object class="GtkGrid" id="grid_sensor">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+              </object>
+            </child>
+            <child type="tab">
+              <object class="GtkLabel" id="notebook_label_sensor">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">Sensordaten</property>
+              </object>
+              <packing>
+                <property name="tab_fill">False</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkGrid" id="grid_sensor_settings">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+              </object>
+              <packing>
+                <property name="position">1</property>
+              </packing>
+            </child>
+            <child type="tab">
+              <object class="GtkLabel" id="notebook_label_sensor_settings">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">erweiterte Einstellungen</property>
+              </object>
+              <packing>
+                <property name="position">1</property>
+                <property name="tab_fill">False</property>
+              </packing>
             </child>
             <child>
               <placeholder/>
             </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
+            <child type="tab">
+              <object class="GtkLabel">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+              </object>
+              <packing>
+                <property name="position">2</property>
+                <property name="tab_fill">False</property>
+              </packing>
             </child>
           </object>
           <packing>

@@ -22,7 +22,7 @@ enum GeneralError {
     Send(SerialCommand),
 }
 
-fn list_ports() -> tokio_serial::Result<Vec<String>> {
+pub(crate) fn list_ports() -> Result<Vec<String>> {
     match tokio_serial::available_ports() {
         Ok(ports) => Ok(ports.into_iter().map(|x| x.port_name).collect()),
         Err(e) => Err(e),
