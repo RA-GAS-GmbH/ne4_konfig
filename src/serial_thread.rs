@@ -1,4 +1,4 @@
-use mio_serial::*;
+use tokio_serial::*;
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -22,8 +22,8 @@ enum GeneralError {
     Send(SerialCommand),
 }
 
-fn list_ports() -> mio_serial::Result<Vec<String>> {
-    match mio_serial::available_ports() {
+fn list_ports() -> tokio_serial::Result<Vec<String>> {
+    match tokio_serial::available_ports() {
         Ok(ports) => Ok(ports.into_iter().map(|x| x.port_name).collect()),
         Err(e) => Err(e),
     }
@@ -40,7 +40,7 @@ impl SerialThread {
         let (to_port_chan_tx, to_port_chan_rx) = channel();
 
         thread::spawn(move || {
-            let mut port: Option<Box<dyn mio_serial::SerialPort>> = None;
+            let mut port: Option<Box<dyn tokio_serial::SerialPort>> = None;
 
             let mut settings: SerialPortSettings = Default::default();
 
