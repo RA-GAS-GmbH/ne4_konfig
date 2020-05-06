@@ -31,7 +31,7 @@ pub enum GeneralError {
     Send(SerialCommand),
 }
 
-pub(crate) fn list_ports() -> Result<Vec<String>> {
+pub(crate) fn list_ports() -> tokio_serial::Result<Vec<String>> {
     match tokio_serial::available_ports() {
         Ok(ports) => Ok(ports.into_iter().map(|x| x.port_name).collect()),
         Err(e) => Err(e),
@@ -73,6 +73,11 @@ impl SerialThread {
                                     .send(SerialResponse::OpenPortSuccess(name))
                                     .unwrap();
                             }
+                            // Err(Error {kind: ErrorKind::NoDevice, ..}) => {
+                            //     let err_str = format!("Port '{}' is already in use or dosn't exist", &name);
+                            //     let error = SerialResponse::OpenPortError(e.to_string());
+                            //     from_port_chan_tx.send(error).unwrap();
+                            // }
                             Err(e) => {
                                 from_port_chan_tx
                                     .send(SerialResponse::OpenPortError(e))
