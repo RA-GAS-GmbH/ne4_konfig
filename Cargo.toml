@@ -20,6 +20,7 @@ glib = "0.9.3"
 # I need port enumeration, so I've patched tokio-serial.
 tokio-serial = { git = "https://github.com/zzeroo/tokio-serial.git", branch = "feature/port_enumeration" }
 chrono = "0.4.11"
+tokio-modbus = "0.4.0"
 
 [dependencies.gtk]
 version = "0.8.1"
