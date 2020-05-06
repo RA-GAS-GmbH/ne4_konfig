@@ -1,3 +1,4 @@
+use core::num;
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -5,6 +6,7 @@ use tokio_serial::*;
 
 #[derive(Debug)]
 pub enum SerialCommand {
+    ChangePort(String),
     ConnectToPort { name: String, baud: u32 },
     Disconnect,
 }
@@ -15,14 +17,21 @@ pub enum SerialResponse {
     DisconnectSuccess,
     OpenPortSuccess(String),
     OpenPortError(std::io::Error),
+    /// A port error has occurred that is likely the result of a serial device disconnected. This
+    /// also returns a list of all still-attached serial devices.
+    UnexpectedDisconnection(Vec<String>),
+    /// A sorted list of ports found during a port scan. Guaranteed to contain the currently-active
+    /// port if there is one.
+    PortsFound(Vec<String>),
 }
 
 #[derive(Debug)]
-enum GeneralError {
+pub enum GeneralError {
+    Parse(num::ParseIntError),
     Send(SerialCommand),
 }
 
-fn list_ports() -> tokio_serial::Result<Vec<String>> {
+pub(crate) fn list_ports() -> tokio_serial::Result<Vec<String>> {
     match tokio_serial::available_ports() {
         Ok(ports) => Ok(ports.into_iter().map(|x| x.port_name).collect()),
         Err(e) => Err(e),
@@ -49,7 +58,7 @@ impl SerialThread {
             let mut last_port_scan_time = Instant::now();
 
             loop {
-                // Check for incoming commands
+                // First check if we have any incoming commands
                 match to_port_chan_rx.try_recv() {
                     Ok(SerialCommand::ConnectToPort { name, baud }) => {
                         settings.baud_rate = baud;
@@ -64,6 +73,11 @@ impl SerialThread {
                                     .send(SerialResponse::OpenPortSuccess(name))
                                     .unwrap();
                             }
+                            // Err(Error {kind: ErrorKind::NoDevice, ..}) => {
+                            //     let err_str = format!("Port '{}' is already in use or dosn't exist", &name);
+                            //     let error = SerialResponse::OpenPortError(e.to_string());
+                            //     from_port_chan_tx.send(error).unwrap();
+                            // }
                             Err(e) => {
                                 from_port_chan_tx
                                     .send(SerialResponse::OpenPortError(e))
@@ -71,6 +85,11 @@ impl SerialThread {
                             }
                         }
                         callback();
+                    }
+                    Ok(SerialCommand::ChangePort(name)) => {
+                        if port.is_some() {
+                            info!("Change port to '{}' using settings {:?}", &name, &settings);
+                        }
                     }
                     Ok(SerialCommand::Disconnect) => {
                         info!("Disconnecting");
@@ -83,6 +102,9 @@ impl SerialThread {
                     Err(TryRecvError::Empty) | Err(TryRecvError::Disconnected) => (),
                 }
 
+                // If a port is active, handle reading and writing to it
+                // TODO: implement port handling
+
                 // Scan for ports every so often
                 if last_port_scan_time.elapsed() > port_scan_time {
                     last_port_scan_time = Instant::now();
@@ -91,7 +113,27 @@ impl SerialThread {
                     debug!("Found ports: {:?}", &ports);
 
                     // check if our port was disconnected
-
+                    let message = {
+                        if let Some(ref mut p) = port {
+                            if let Some(name) = p.name() {
+                                if ports.binary_search(&name).is_err() {
+                                    SerialResponse::UnexpectedDisconnection(ports)
+                                } else {
+                                    SerialResponse::PortsFound(ports)
+                                }
+                            } else {
+                                SerialResponse::PortsFound(ports)
+                            }
+                        } else {
+                            SerialResponse::PortsFound(ports)
+                        }
+                    };
+                    if let SerialResponse::UnexpectedDisconnection(_) = message {
+                        port = None;
+                    }
+                    from_port_chan_tx
+                        .send(message)
+                        .expect("Sending port_scan message failed");
                     callback();
                 }
 
@@ -103,5 +145,15 @@ impl SerialThread {
             from_port_chan_rx: from_port_chan_rx,
             to_port_chan_tx: to_port_chan_tx,
         }
+    }
+
+    pub fn send_port_change_port_cmd(
+        &self,
+        port_name: String,
+    ) -> std::result::Result<(), GeneralError> {
+        let tx = &self.to_port_chan_tx;
+        tx.send(SerialCommand::ChangePort(port_name))
+            .map_err(|e| GeneralError::Send(e.0))?;
+        Ok(())
     }
 }

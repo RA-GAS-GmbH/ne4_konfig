@@ -34,6 +34,14 @@ build:stable:
     - cargo update
     - cargo build --verbose
 
+build:nightly:
+    image: rustlang/rust:nightly
+    stage: build
+    allow_failure: true
+    script:
+    - cargo update
+    - cargo build --verbose
+
 test:rustfmt:
     image: "rust:latest"
     stage: test
