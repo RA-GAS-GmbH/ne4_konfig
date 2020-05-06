@@ -7,9 +7,13 @@ use gtk::Application;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-/// Build some with builder ><
+/// Build gtk objects with gtk::Builder
 /// ```
-/// let window_main: gtk::Window = builder.get_object("window_main").expect("Could not find 'window_main' in glade file");
+/// let glade_src = include_str!("main.ui");
+/// let builder = gtk::Builder::new_from_string(glade_src);
+/// # old build
+/// let window_main: gtk::Window = builder.get_object("window_main").expect("Couldn't find 'window_main' in glade ui file");
+/// # usage of this macro build!
 /// let window_main: gtk::Window = build!(builder, "window_main");
 /// ```
 #[macro_export]
@@ -17,7 +21,7 @@ macro_rules! build {
     ($builder:ident, $e:expr) => {
         $builder
             .get_object($e)
-            .expect(&format!("Could not find '{}' in glade file", $e))
+            .expect(&format!("Couldn't find '{}' in glade ui file", $e))
     };
 }
 
