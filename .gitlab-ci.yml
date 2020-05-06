@@ -35,8 +35,9 @@ build:stable:
     - cargo build --verbose
 
 build:nightly:
-    image: "rust:nightly"
+    image: rustlang/rust:nightly
     stage: build
+    allow_failure: true
     script:
     - cargo update
     - cargo build --verbose
