@@ -92,7 +92,7 @@ install:
   - IF "%BITS%" == "32" SET ARCH=i686
   - IF "%BITS%" == "64" SET ARCH=x86_64
   - appveyor DownloadFile https://win.rustup.rs/ -FileName rustup-init.exe
-  - rustup-init -yv --default-toolchain %channel% --default-host %target%
+  - rustup-init.exe -yv --default-toolchain %channel% --default-host %target%
   - set PATH=C:\msys64\mingw%BITS%\bin;C:\msys64\usr\bin;%USERPROFILE%\.cargo\bin;%PATH%
   - rustc -vV
   - cargo -vV
@@ -128,6 +128,10 @@ after_build:
   # - if "%PACKAGE%"=="true" ( 7z a ne4_konfig-win%BITS%-%ARCH%.zip resources )
   - if "%PACKAGE%"=="true" ( 7z a ne4_konfig-win%BITS%-%ARCH%.zip README.md )
   - if "%PACKAGE%"=="true" ( 7z a ne4_konfig-win%BITS%-%ARCH%.zip LICENSE )
+
+cache:
+  - %USERPROFILE%\.cargo\registry
+  - target
 
 artifacts:
   - path: ne4_konfig-win%BITS%-%ARCH%.zip
