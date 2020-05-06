@@ -34,6 +34,14 @@ build:stable:
     - cargo update
     - cargo build --verbose
 
+build:nightly:
+    image: rustlang/rust:nightly
+    stage: build
+    allow_failure: true
+    script:
+    - cargo update
+    - cargo build --verbose
+
 test:rustfmt:
     image: "rust:latest"
     stage: test
@@ -53,7 +61,7 @@ package:
       - ne4_konfig
       - LICENSE
       - README.md
-      name: "$CI_BUILD_REF_NAME"
+      name: ne4_konfig-linux-x86_64-"$CI_BUILD_REF_NAME"
     stage: package
     script:
     - cargo update

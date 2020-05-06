@@ -1,12 +1,25 @@
 [package]
 name = "ne4_konfig"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Stefan Müller <zzeroo> <co@zzeroo.com>"]
+license = "GPL-3.0"
+readme = "README.md"
+repository = "https://gitlab.com/RA-GAS-GmbH/ne4_konfig"
+description = "GUI für die Konfiguration der 'NE4-MOD-BUS' Sensoren"
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[badges]
+appveyor = { repository = "zzeroo/ne4-konfig", service = "gitlab" }
+gitlab = { repository = "RA-GAS-GmbH/ne4_konfig" }
+maintenance = { status = "actively-developed" }
 
 [dependencies]
+log = "0.4.8"
+env_logger = "0.7.1"
+glib = "0.9.3"
+# I need port enumeration, so I've patched tokio-serial.
+tokio-serial = { git = "https://github.com/zzeroo/tokio-serial.git", branch = "feature/port_enumeration" }
+chrono = "0.4.11"
 
 [dependencies.gtk]
 version = "0.8.1"
@@ -15,4 +28,3 @@ features = ["v3_16"]
 [dependencies.gio]
 version = ""
 features = ["v2_44"]
-

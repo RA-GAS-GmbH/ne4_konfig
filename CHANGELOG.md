@@ -8,10 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- [Platformunabhängigkeit] die Anwendung wird für Windows und Linux Systeme entwickelt und getestet
+- Automatische Überprüfung der seriellen Schnittstellen
+    - beim Start der Anwendung werden die verfügbaren Schnittstellen am System gesucht
+    der Anwender kann die verfügbaren Schnittstellen einfach über die Toolbar wechseln
 ### Changed
-- Gitlab CI uses now the rust:latest image for testing (fmt)
+- Gitlab CI benutzt nun das `rust:latest` Image für `cargo fmt` und die Tests
 
 ## [v0.1.0] - 2020-04-29
 ### Added
-- Gitlab CI for linux builds and tests
-- Appveyor CI for windows builds and tests
+- Gitlab CI wird für Linux Builds und Tests verwendet
+- Appveyor CI wird für Windows Builds und Tests verwendet
