@@ -80,6 +80,12 @@ environment:
       BITS: 32
       PACKAGE: true
 
+# Cache
+
+cache:
+    - '%USERPROFILE%\.cargo\registry'
+    - target
+
 ## Install Script ##
 
 # This is the most important part of the Appveyor configuration. This installs the version of Rust
@@ -132,9 +138,5 @@ after_build:
 artifacts:
   - path: ne4_konfig-win%BITS%-%ARCH%.zip
     name: NE4-MOD-BUS - Konfiguration %ARCH% (Windows %BITS%Bit)
-
-cache:
-    - '%USERPROFILE%\.cargo\registry'
-    - target
 
 
