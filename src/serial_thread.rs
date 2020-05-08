@@ -1,4 +1,3 @@
-use core::num;
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -13,7 +12,6 @@ pub enum SerialCommand {
 
 #[derive(Debug)]
 pub enum SerialResponse {
-    Data(Vec<u8>),
     DisconnectSuccess,
     OpenPortSuccess(String),
     OpenPortError(std::io::Error),
@@ -27,7 +25,6 @@ pub enum SerialResponse {
 
 #[derive(Debug)]
 pub enum GeneralError {
-    Parse(num::ParseIntError),
     Send(SerialCommand),
 }
 
@@ -73,11 +70,6 @@ impl SerialThread {
                                     .send(SerialResponse::OpenPortSuccess(name))
                                     .unwrap();
                             }
-                            // Err(Error {kind: ErrorKind::NoDevice, ..}) => {
-                            //     let err_str = format!("Port '{}' is already in use or dosn't exist", &name);
-                            //     let error = SerialResponse::OpenPortError(e.to_string());
-                            //     from_port_chan_tx.send(error).unwrap();
-                            // }
                             Err(e) => {
                                 from_port_chan_tx
                                     .send(SerialResponse::OpenPortError(e))
