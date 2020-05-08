@@ -121,10 +121,10 @@ fn ui_init(app: &gtk::Application) {
     });
 
     let ui = Ui {
-        combo_box_text_ports_changed_signal: combo_box_text_ports_changed_signal,
+        combo_box_text_ports_changed_signal,
         toggle_button_connect: toggle_button_connect.clone(),
         combo_box_text_ports: combo_box_text_ports.clone(),
-        combo_box_text_ports_map: combo_box_text_ports_map,
+        combo_box_text_ports_map,
         statusbar_application: statusbar_application.clone(),
         statusbar_contexts: context_map,
         window_application: window_application.clone(),

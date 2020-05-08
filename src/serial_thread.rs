@@ -134,8 +134,8 @@ impl SerialThread {
         });
 
         SerialThread {
-            from_port_chan_rx: from_port_chan_rx,
-            to_port_chan_tx: to_port_chan_tx,
+            from_port_chan_rx,
+            to_port_chan_tx,
         }
     }
 
