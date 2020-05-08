@@ -67,7 +67,7 @@ fn ui_init(app: &gtk::Application) {
     let glade_src = include_str!("main.ui");
     let builder = gtk::Builder::new_from_string(glade_src);
     let window_application: gtk::ApplicationWindow = build!(builder, "window_application");
-    let combo_box_text_ports: gtk::ComboBoxText = build!(builder, "combo_box_text_ports");
+    let _combo_box_text_ports: gtk::ComboBoxText = build!(builder, "combo_box_text_ports");
     // Statusbar
     let statusbar_application: gtk::Statusbar = build!(builder, "statusbar_application");
     let context_id_port_ops = statusbar_application.get_context_id("port operations");
@@ -151,7 +151,7 @@ fn ui_init(app: &gtk::Application) {
 // Die `receive` Funktion handelt "events" vom SerialThread
 fn receive() -> glib::Continue {
     GLOBAL.with(|global| {
-        if let Some((ref mut ui, ref serial_thread, ref mut state)) = *global.borrow_mut() {
+        if let Some((ref mut ui, ref serial_thread, ref mut _state)) = *global.borrow_mut() {
             match serial_thread.from_port_chan_rx.try_recv() {
                 Ok(SerialResponse::PortsFound(ports)) => {
                     info!("Found some ports!");
@@ -195,7 +195,7 @@ fn receive() -> glib::Continue {
                                 ui.combo_box_text_ports_map.insert(p, i);
                             }
                             ui.combo_box_text_ports.set_sensitive(true);
-                            &ui.toggle_button_connect.set_sensitive(true);
+                            ui.toggle_button_connect.set_sensitive(true);
                         }
                         signal_handler_block(
                             &ui.combo_box_text_ports,
@@ -237,7 +237,7 @@ fn receive() -> glib::Continue {
 
 /// Log messages to the status bar using the specific status context.
 fn log_status(ui: &Ui, context: StatusContext, message: &str) {
-    let context_id = ui.statusbar_contexts.get(&context).unwrap();
+    let _context_id = ui.statusbar_contexts.get(&context).unwrap();
     let timestamp = Utc::now().format("%Y-%m-%d %H:%M:%S");
     let formatted_message = format!("[{}]: {}", timestamp, message);
     ui.statusbar_application.push(0, &formatted_message);
