@@ -85,6 +85,7 @@ environment:
 cache:
     - '%USERPROFILE%\.cargo\registry'
     - target
+    - C:\msys64\var\cache\pacman\pkg\
 
 ## Install Script ##
 
