@@ -202,8 +202,9 @@ fn receive() -> glib::Continue {
                             &ui.combo_box_text_ports_changed_signal,
                         );
                         if let Some(p) = current_port {
-                            ui.combo_box_text_ports
-                                .set_active(Some(*ui.combo_box_text_ports_map.get(&p).unwrap_or(&0)));
+                            ui.combo_box_text_ports.set_active(Some(
+                                *ui.combo_box_text_ports_map.get(&p).unwrap_or(&0),
+                            ));
                         } else {
                             ui.combo_box_text_ports.set_active(Some(0));
                         }
