@@ -129,10 +129,12 @@ after_build:
   - if "%PACKAGE%"=="true" ( 7z a ne4_konfig-win%BITS%-%ARCH%.zip README.md )
   - if "%PACKAGE%"=="true" ( 7z a ne4_konfig-win%BITS%-%ARCH%.zip LICENSE )
 
-cache:
-  - %USERPROFILE%\.cargo\registry
-  - target
-
 artifacts:
   - path: ne4_konfig-win%BITS%-%ARCH%.zip
     name: NE4-MOD-BUS - Konfiguration %ARCH% (Windows %BITS%Bit)
+
+cache:
+    - '%USERPROFILE%\.cargo\registry'
+    - target
+
+
