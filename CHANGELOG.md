@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.3.0] - 2020-05-10
+- Sensordaten werden nun fast vollständig angezeigt
+
 ## [v0.2.0] - 2020-05-06
 ### Added
 - [Platformunabhängigkeit] die Anwendung wird für Windows und Linux Systeme entwickelt und getestet
