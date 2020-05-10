@@ -21,10 +21,11 @@ glib = "0.9.3"
 tokio-serial = { git = "https://github.com/zzeroo/tokio-serial.git", branch = "feature/port_enumeration" }
 chrono = "0.4.11"
 tokio-modbus = "0.4.0"
+gdk = "0.12.1"
 
 [dependencies.gtk]
 version = "0.8.1"
-features = ["v3_16"]
+features = ["v3_20"]
 
 [dependencies.gio]
 version = ""
