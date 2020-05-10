@@ -44,6 +44,15 @@ Für Windows ist die Installation von Rust hier beschrieben: https://rustup.rs/
 Wir verwenden unter Windows das Host Tripple `x86_64-pc-windows-gnu`,
 die `stable` Toolchain und das `minimal` Rustup Profil.
 
+```powershell
+# Powershell
+curl -sSf -o rustup-init.exe https://win.rustup.rs/
+rustup-init.exe -y --default-host x86_64-pc-windows-gnu --default-toolchain stable
+set PATH=%PATH%;%USERPROFILE%\.cargo\bin
+rustc -Vv
+cargo -V
+```
+
 Die Installation der Gtk Bibliotheken wird hier beschrieben: [Compiling Rust + Windows + GTK step-by-step]
 
 # Entwicklung

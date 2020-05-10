@@ -8,11 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [v0.3.0] - 2020-05-10
+- Sensordaten werden nun fast vollständig angezeigt
+
+## [v0.2.0] - 2020-05-06
 ### Added
 - [Platformunabhängigkeit] die Anwendung wird für Windows und Linux Systeme entwickelt und getestet
 - Automatische Überprüfung der seriellen Schnittstellen
     - beim Start der Anwendung werden die verfügbaren Schnittstellen am System gesucht
     der Anwender kann die verfügbaren Schnittstellen einfach über die Toolbar wechseln
+- werden weitere Schnittstellen an den PC angeschlossen, stehen diese automatisch
+  dem Anwender zur Verfügung.
 ### Changed
 - Gitlab CI benutzt nun das `rust:latest` Image für `cargo fmt` und die Tests
 
