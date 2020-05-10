@@ -31,11 +31,17 @@ enum StatusContext {
 }
 
 pub struct Ui {
+    button_reset: gtk::Button,
     combo_box_text_ports_changed_signal: glib::SignalHandlerId,
     combo_box_text_ports_map: HashMap<String, u32>,
     combo_box_text_ports: gtk::ComboBoxText,
+    entry_modbus_address: gtk::Entry,
+    label_sensor_type_value: gtk::Label,
+    label_sensor_working_mode_value: gtk::Label,
+    list_store_sensor: gtk::ListStore,
     statusbar_application: gtk::Statusbar,
     statusbar_contexts: HashMap<StatusContext, u32>,
+    toggle_button_connect_toggle_signal: glib::SignalHandlerId,
     toggle_button_connect: gtk::ToggleButton,
     window_application: gtk::ApplicationWindow,
 }
@@ -97,6 +103,17 @@ fn ui_init(app: &gtk::Application) {
         combo_box_text_ports.set_active(Some(0));
         combo_box_text_ports.set_sensitive(false);
     }
+    // Modbus Adresse
+    let entry_modbus_address = build!(builder, "entry_modbus_address");
+    // Reset Button
+    let button_reset: gtk::Button = build!(builder, "button_reset");
+    // Labels Sensor Werte
+    let label_sensor_type_value: gtk::Label = build!(builder, "label_sensor_type_value");
+    let label_sensor_working_mode_value: gtk::Label =
+        build!(builder, "label_sensor_working_mode_value");
+
+    // ListStore Sensor Values
+    let list_store_sensor: gtk::ListStore = build!(builder, "list_store_sensor");
 
     // Connect button, disabled if no ports available
     let toggle_button_connect: gtk::ToggleButton = build!(builder, "toggle_button_connect");
@@ -120,13 +137,52 @@ fn ui_init(app: &gtk::Application) {
         }
     });
 
+    let toggle_button_connect_toggle_signal = toggle_button_connect.connect_clicked(move |s| {
+        if s.get_active() {
+            GLOBAL.with(|global| {
+                if let Some((ref ui, _, _)) = *global.borrow() {
+                    ui.combo_box_text_ports.set_sensitive(false);
+                    ui.entry_modbus_address.set_sensitive(false);
+                    ui.button_reset.set_sensitive(false);
+                    ui.label_sensor_type_value
+                        .set_text("RA-GAS GmbH - NE4-MOD-BUS");
+                    ui.label_sensor_working_mode_value.set_text("10 CO 1000ppm");
+                }
+            });
+        } else {
+            GLOBAL.with(|global| {
+                if let Some((ref ui, _, _)) = *global.borrow() {
+                    ui.combo_box_text_ports.set_sensitive(true);
+                    ui.entry_modbus_address.set_sensitive(true);
+                    ui.button_reset.set_sensitive(true);
+                    ui.label_sensor_type_value.set_text("");
+                    ui.label_sensor_working_mode_value.set_text("");
+                }
+            });
+        }
+    });
+
+    button_reset.connect_clicked(move |_| {
+        GLOBAL.with(|global| {
+            if let Some((ref ui, _, _)) = *global.borrow() {
+                ui.entry_modbus_address.set_text("247");
+            }
+        });
+    });
+
     let ui = Ui {
+        button_reset,
         combo_box_text_ports_changed_signal,
-        toggle_button_connect: toggle_button_connect.clone(),
-        combo_box_text_ports: combo_box_text_ports.clone(),
         combo_box_text_ports_map,
-        statusbar_application: statusbar_application.clone(),
+        combo_box_text_ports,
+        entry_modbus_address,
+        label_sensor_type_value,
+        label_sensor_working_mode_value,
+        list_store_sensor,
+        statusbar_application,
         statusbar_contexts: context_map,
+        toggle_button_connect_toggle_signal,
+        toggle_button_connect,
         window_application: window_application.clone(),
     };
 
@@ -146,6 +202,19 @@ fn ui_init(app: &gtk::Application) {
     });
 
     window_application.show_all();
+
+    // Set CSS styles for the entire application.
+    let css_provider = gtk::CssProvider::new();
+    let display = gdk::Display::get_default().expect("Couldn't open default GDK display");
+    let screen = display.get_default_screen();
+    gtk::StyleContext::add_provider_for_screen(
+        &screen,
+        &css_provider,
+        gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+    );
+    css_provider
+        .load_from_path("resources/style.css")
+        .expect("Failed to load CSS stylesheet");
 }
 
 // Die `receive` Funktion handelt "events" vom SerialThread

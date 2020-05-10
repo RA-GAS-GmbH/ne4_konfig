@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.22.2 
+<!-- Generated with glade 3.36.0 
 
 Copyright (C) 2020 Stefan Müller for RA-GAS GmbH Kernen i.R.
 
@@ -28,15 +28,294 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
   <!-- interface-description GUI f\303\274r die Konfiguration der 'NE4-MOD-BUS' Sensoren -->
   <!-- interface-copyright 2020 Stefan M\303\274ller for RA-GAS GmbH Kernen i.R. -->
   <!-- interface-authors Stefan M\303\274ller <s.mueller@zzeroo.com> -->
+  <object class="GtkListStore" id="list_store_sensor">
+    <columns>
+      <!-- column-name reg -->
+      <column type="guint"/>
+      <!-- column-name value_min -->
+      <column type="guint64"/>
+      <!-- column-name value -->
+      <column type="guint64"/>
+      <!-- column-name description -->
+      <column type="gchararray"/>
+      <!-- column-name sync -->
+      <column type="GtkButtonsType"/>
+    </columns>
+    <data>
+      <row>
+        <col id="0">0</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Gerätekennung Kunden</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">1</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Arbeitsweise (Sensor)</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">2</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Gaskonzentration im ppm</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">3</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Berechneter Ausgangsstrom in mA (mit zwei Kommastellen)</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">4</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Interne Leiterplattentemperatur in °C (mit Kommastelle)</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">10</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Sensorspannung im Nullpunkt</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">11</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Sensorwert Nullpunkt = 0</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">12</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Sensorspannung im Kalibrierpunkt ( bei Endwert)</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">13</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Sensorwert im Kalibrierpunkt (bei Endwert)</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">40</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">AD-Wert der Temperaturmessung</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">41</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">AD-Wert des Potentiometers</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">42</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">AD-Wert des Sensors</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">43</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Verstärkungsfaktor durch Poti (100 = 1,00)</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">44</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Verstärkungsfaktor durch Temperaturkennlinie (100 = 1,00)</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">45</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Korrigierter AD-Wert des Sensors</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">46</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">berechnete Gaskonzentration im ppm</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">49</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Softwaredatum bis 31.12.2029</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">15</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Messwert unten für Ausgangsstrom unten</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">16</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Ausgangsstrom im unteren Punkt</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">17</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Messwert oben für Ausgangsstrom oben</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">18</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Ausgangsstrom im oberen Punkt</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">20</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Status (Auswerte IC) (keine Eingabemöglichkeit)</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">21</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Lock (Auswerte IC)</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">22</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">TIA_GAIN (Auswerte IC)</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">23</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">RLOAD (Auswerte IC)</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">24</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">REF_Source (Auswerte IC)</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">25</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">INT_Z (Auswerte IC)</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">26</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">BIAS_Sign (Auswerte IC)</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">27</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">BIAS (Auswerte IC)</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">28</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">FET_Short (Auswerte IC)</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">29</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">OP_Mode (Auswerte IC)</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">30</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Kennlinie vom Sensorhersteller bei -20°C</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">31</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Kennlinie vom Sensorhersteller bei 0°C</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">32</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Kennlinie vom Sensorhersteller bei 10°C</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">33</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Kennlinie vom Sensorhersteller bei 20°C</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">34</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Kennlinie vom Sensorhersteller bei 30°C</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">35</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Kennlinie vom Sensorhersteller bei 40°C</col>
+        <col id="4">none</col>
+      </row>
+      <row>
+        <col id="0">36</col>
+        <col id="1">0</col>
+        <col id="2">0</col>
+        <col id="3" translatable="yes">Kennlinie vom Sensorhersteller bei 60°C</col>
+        <col id="4">none</col>
+      </row>
+    </data>
+  </object>
   <object class="GtkApplicationWindow" id="window_application">
     <property name="can_focus">False</property>
     <property name="title" translatable="yes">NE4-MOD-BUS - Konfiguration</property>
     <property name="default_width">1024</property>
     <property name="default_height">600</property>
     <property name="show_menubar">False</property>
-    <child type="titlebar">
-      <placeholder/>
-    </child>
     <child>
       <object class="GtkBox" id="box_main">
         <property name="visible">True</property>
@@ -64,7 +343,7 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
               </object>
               <packing>
                 <property name="pack_type">end</property>
-                <property name="position">3</property>
+                <property name="position">2</property>
               </packing>
             </child>
             <child>
@@ -127,35 +406,145 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <child>
-              <object class="GtkGrid" id="grid_sensor">
+              <object class="GtkBox" id="box_sensor_type">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="orientation">vertical</property>
                 <child>
-                  <placeholder/>
+                  <object class="GtkBox" id="hbox_sensor_type">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="valign">end</property>
+                    <child>
+                      <object class="GtkLabel" id="label_sensor_type">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="valign">end</property>
+                        <property name="label" translatable="yes">Sensor Typ:</property>
+                        <property name="width_chars">20</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="label_sensor_type_value">
+                        <property name="name">label_sensor_type_value</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="halign">start</property>
+                      </object>
+                      <packing>
+                        <property name="expand">True</property>
+                        <property name="fill">True</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
                 </child>
                 <child>
-                  <placeholder/>
+                  <object class="GtkBox" id="hbox_sensor_working_mode">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="valign">end</property>
+                    <child>
+                      <object class="GtkLabel" id="label_sensor_working_mode">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="valign">end</property>
+                        <property name="label" translatable="yes">Arbeitsweise:</property>
+                        <property name="width_chars">20</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="label_sensor_working_mode_value">
+                        <property name="name">label_sensor_working_mode_value</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="halign">start</property>
+                      </object>
+                      <packing>
+                        <property name="expand">True</property>
+                        <property name="fill">True</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
                 </child>
                 <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
+                  <object class="GtkBox" id="hbox_sensor_value">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="valign">end</property>
+                    <child>
+                      <object class="GtkLabel" id="label_sensor_type2">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="halign">end</property>
+                        <property name="valign">end</property>
+                        <property name="label" translatable="yes">Gaskonzentration:</property>
+                        <property name="width_chars">20</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="label_sensor_type_value_value">
+                        <property name="name">label_sensor_type_value_value</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="halign">end</property>
+                        <property name="valign">end</property>
+                        <property name="margin_end">10</property>
+                        <property name="label" translatable="yes">000</property>
+                      </object>
+                      <packing>
+                        <property name="expand">True</property>
+                        <property name="fill">True</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="label_sensor_type_value_si">
+                        <property name="name">label_sensor_type_value_si</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="halign">start</property>
+                        <property name="valign">end</property>
+                        <property name="label" translatable="yes">ppm</property>
+                      </object>
+                      <packing>
+                        <property name="expand">True</property>
+                        <property name="fill">True</property>
+                        <property name="position">2</property>
+                      </packing>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">2</property>
+                  </packing>
                 </child>
               </object>
             </child>
@@ -171,35 +560,60 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
               </packing>
             </child>
             <child>
-              <object class="GtkGrid" id="grid_sensor_settings">
+              <object class="GtkScrolledWindow">
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
+                <property name="can_focus">True</property>
+                <property name="shadow_type">in</property>
                 <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
-                </child>
-                <child>
-                  <placeholder/>
+                  <object class="GtkTreeView" id="tree_view">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="model">list_store_sensor</property>
+                    <property name="enable_grid_lines">horizontal</property>
+                    <child internal-child="selection">
+                      <object class="GtkTreeSelection"/>
+                    </child>
+                    <child>
+                      <object class="GtkTreeViewColumn" id="column_reg">
+                        <property name="min_width">100</property>
+                        <property name="title" translatable="yes">Reg. Nr.</property>
+                        <property name="clickable">True</property>
+                        <property name="sort_indicator">True</property>
+                        <property name="sort_column_id">0</property>
+                        <child>
+                          <object class="GtkCellRendererText" id="cell_renderer_value"/>
+                          <attributes>
+                            <attribute name="text">0</attribute>
+                          </attributes>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkTreeViewColumn" id="column_value">
+                        <property name="min_width">100</property>
+                        <property name="title" translatable="yes">Wert</property>
+                        <child>
+                          <object class="GtkCellRendererText" id="cell_render_value"/>
+                          <attributes>
+                            <attribute name="text">1</attribute>
+                          </attributes>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkTreeViewColumn" id="column_description">
+                        <property name="sizing">autosize</property>
+                        <property name="min_width">200</property>
+                        <property name="title" translatable="yes">Beschreibung</property>
+                        <child>
+                          <object class="GtkCellRendererText" id="cell_description"/>
+                          <attributes>
+                            <attribute name="text">3</attribute>
+                          </attributes>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
                 </child>
               </object>
               <packing>
@@ -235,8 +649,6 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
           <object class="GtkStatusbar" id="statusbar_application">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="margin_left">10</property>
-            <property name="margin_right">10</property>
             <property name="margin_start">10</property>
             <property name="margin_end">10</property>
             <property name="margin_top">6</property>
@@ -251,6 +663,9 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
           </packing>
         </child>
       </object>
+    </child>
+    <child type="titlebar">
+      <placeholder/>
     </child>
   </object>
 </interface>
