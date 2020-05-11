@@ -129,7 +129,7 @@ after_build:
   - if "%PACKAGE%"=="true" ( glib-compile-schemas share\glib-2.0\schemas )
   - if "%PACKAGE%"=="true" ( 7z a ne4_konfig-win%BITS%-%ARCH%.zip share )
   - if "%PACKAGE%"=="true" ( ldd target\release\ne4_konfig.exe )
-  - if "%PACKAGE%"=="true" ( ldd target\release\ne4_konfig.exe | awk -F"[ ]+" "/mingw/{ gsub(/^\t/,\"\",$1); print \"C:\\\\msys64\\\\mingw%BITS%\\\\bin\\\\\"$1 }" | uniq -u > dlls.txt )
+  - if "%PACKAGE%"=="true" ( ldd target\release\ne4_konfig.exe | awk -F"[ ]+" "/mingw/{ gsub(/^\t/,\"\",$1); print \"C:\\\\msys%BITS%\\\\mingw%BITS%\\\\bin\\\\\"$1 }" | uniq -u > dlls.txt )
   - if "%PACKAGE%"=="true" ( 7z a ne4_konfig-win%BITS%-%ARCH%.zip -i@dlls.txt )
   - if "%PACKAGE%"=="true" ( 7z a ne4_konfig-win%BITS%-%ARCH%.zip %APPVEYOR_BUILD_FOLDER%\target\release\ne4_konfig.exe )
   - if "%PACKAGE%"=="true" ( 7z a ne4_konfig-win%BITS%-%ARCH%.zip resources )
