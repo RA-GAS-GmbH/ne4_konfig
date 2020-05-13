@@ -1,5 +1,6 @@
 use crate::serial_thread::{list_ports, SerialResponse, SerialThread};
 use chrono::Utc;
+use futures::channel::mpsc::{Receiver, Sender};
 use gio::prelude::*;
 use glib::{signal_handler_block, signal_handler_unblock};
 use gtk::prelude::*;
@@ -7,23 +8,8 @@ use gtk::Application;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-/// Build gtk objects with gtk::Builder
-/// ```
-/// let glade_src = include_str!("main.ui");
-/// let builder = gtk::Builder::new_from_string(glade_src);
-/// # old build
-/// let window_main: gtk::Window = builder.get_object("window_main").expect("Couldn't find 'window_main' in glade ui file");
-/// # usage of this macro build!
-/// let window_main: gtk::Window = build!(builder, "window_main");
-/// ```
-#[macro_export]
-macro_rules! build {
-    ($builder:ident, $e:expr) => {
-        $builder
-            .get_object($e)
-            .expect(&format!("Couldn't find '{}' in glade ui file", $e))
-    };
-}
+#[macro_use]
+pub mod macros;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 enum StatusContext {
@@ -43,7 +29,7 @@ pub struct Ui {
     statusbar_contexts: HashMap<StatusContext, u32>,
     toggle_button_connect_toggle_signal: glib::SignalHandlerId,
     toggle_button_connect: gtk::ToggleButton,
-    window_application: gtk::ApplicationWindow,
+    application_window: gtk::ApplicationWindow,
 }
 
 pub struct State {
@@ -70,9 +56,9 @@ pub fn launch() {
 }
 
 fn ui_init(app: &gtk::Application) {
-    let glade_src = include_str!("main.ui");
-    let builder = gtk::Builder::new_from_string(glade_src);
-    let window_application: gtk::ApplicationWindow = build!(builder, "window_application");
+    let glade_str = include_str!("main.ui");
+    let builder = gtk::Builder::new_from_string(glade_str);
+    let application_window: gtk::ApplicationWindow = build!(builder, "application_window");
     let _combo_box_text_ports: gtk::ComboBoxText = build!(builder, "combo_box_text_ports");
     // Statusbar
     let statusbar_application: gtk::Statusbar = build!(builder, "statusbar_application");
@@ -121,7 +107,7 @@ fn ui_init(app: &gtk::Application) {
         toggle_button_connect.set_sensitive(false);
     }
 
-    window_application.set_application(Some(app));
+    application_window.set_application(Some(app));
 
     // Callbacks
     let combo_box_text_ports_changed_signal = combo_box_text_ports.connect_changed(move |s| {
@@ -183,7 +169,7 @@ fn ui_init(app: &gtk::Application) {
         statusbar_contexts: context_map,
         toggle_button_connect_toggle_signal,
         toggle_button_connect,
-        window_application: window_application.clone(),
+        application_window: application_window.clone(),
     };
 
     let state = State {
@@ -201,7 +187,25 @@ fn ui_init(app: &gtk::Application) {
         ));
     });
 
-    window_application.show_all();
+    application_window.show_all();
+
+    // // future on main thread has access to UI
+    // let future = {
+    //     let mut data_event_receiver = data_event_receiver
+    //     .replace(None)
+    //     .take()
+    //     .expect("data_event_receiver");
+    //     async move {
+    //         use futures::stream::StreamExt;
+    //
+    //         while let Some(event) = data_event_receiver.next().await {
+    //             println!("data_event: {:?}", event);
+    //             // match event {
+    //             //
+    //             // }
+    //         }
+    //     }
+    // };
 
     // Set CSS styles for the entire application.
     let css_provider = gtk::CssProvider::new();
