@@ -1,7 +1,7 @@
 use futures::channel::mpsc::{Receiver, Sender};
 use gio::prelude::*;
-use gtk::prelude::*;
 use gtk::{ApplicationWindow, Builder, Button, Label};
+use gtk::prelude::*;
 use serde::Deserialize;
 use std::cell::RefCell;
 use std::env::args;
@@ -27,6 +27,7 @@ struct UiElements {
     info_label: Label,
 }
 
+
 fn main() {
     use std::thread;
 
@@ -35,6 +36,7 @@ fn main() {
     // thread-to-thread communication
     let (ui_event_sender, mut ui_event_receiver) = futures::channel::mpsc::channel(0);
     let (mut data_event_sender, data_event_receiver) = futures::channel::mpsc::channel(0);
+
 
     // spawn data/ network thread
     thread::spawn(move || {
