@@ -1,7 +1,7 @@
+use std::fmt;
 use tokio::time::*;
 use tokio_modbus::prelude::*;
 use tokio_serial::{Serial, SerialPortSettings};
-use std::fmt;
 
 /// Representation des 'NE4-MOD-BUS' Sensors
 ///
@@ -110,7 +110,6 @@ async fn read_register(i: usize) -> Result<Vec<u16>, futures::io::Error> {
     let mut ctx = rtu::connect_slave(port, slave).await?;
     ctx.read_holding_registers(i as u16, 1).await
 }
-
 
 #[cfg(test)]
 mod tests {

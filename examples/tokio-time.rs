@@ -1,6 +1,5 @@
 use tokio::time::*;
 
-
 #[tokio::main]
 async fn main() {
     println!("Start Task");
@@ -13,7 +12,6 @@ async fn main() {
 
     println!("End Task");
 }
-
 
 async fn long_run() {
     delay_for(Duration::from_millis(100)).await;

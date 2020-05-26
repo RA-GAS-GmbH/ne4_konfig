@@ -3,13 +3,11 @@ use tokio::runtime::Runtime;
 use tokio_modbus::prelude::*;
 use tokio_serial::{Serial, SerialPortSettings};
 
-
 #[tokio::main]
 async fn main() {
     let registers = read_all_registers().await;
     println!("{:#?}", registers);
 }
-
 
 async fn read_all_registers() -> Result<Vec<u16>, futures::io::Error> {
     const TTY: &str = "/dev/ttyUSB0";
