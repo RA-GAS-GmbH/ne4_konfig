@@ -12,17 +12,17 @@ mod gui {
 
         pub fn test_thread_local() {
             GLOBAL.with(|global| {
-                *global.borrow_mut() = Some(
-                    "string".into()
-                );
+                *global.borrow_mut() = Some("string".into());
             })
         }
-
     }
 }
 
 fn main() {
     gui::gtk3::test_thread_local();
 
-    println!("Thread Local Var: {:?}", GLOBAL.with(|global| global.borrow().clone()));
+    println!(
+        "Thread Local Var: {:?}",
+        GLOBAL.with(|global| global.borrow().clone())
+    );
 }
