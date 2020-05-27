@@ -6,7 +6,6 @@ use gtk::prelude::*;
 use gtk::Application;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::rc::Rc;
 
 #[macro_use]
 pub mod macros;
@@ -34,13 +33,9 @@ pub struct Ui {
     application_window: gtk::ApplicationWindow,
 }
 
-pub struct State {
-    connected_port: Option<String>,
-}
-
 // Thread local storage
 thread_local!(
-    pub static GLOBAL: RefCell<Option<(Ui, State)>> = RefCell::new(None)
+    pub static GLOBAL: RefCell<Option<Ui>> = RefCell::new(None)
 );
 
 pub fn launch() {
@@ -148,7 +143,7 @@ fn ui_init(app: &gtk::Application) {
     let toggle_button_connect_toggle_signal = toggle_button_connect.connect_clicked(move |s| {
         if s.get_active() {
             GLOBAL.with(|global| {
-                if let Some((ref ui, _)) = *global.borrow() {
+                if let Some(ref ui) = *global.borrow() {
                     ui.combo_box_text_ports.set_sensitive(false);
                     ui.entry_modbus_address.set_sensitive(false);
                     ui.button_reset.set_sensitive(false);
@@ -159,7 +154,7 @@ fn ui_init(app: &gtk::Application) {
             });
         } else {
             GLOBAL.with(|global| {
-                if let Some((ref ui, _)) = *global.borrow() {
+                if let Some(ref ui) = *global.borrow() {
                     ui.combo_box_text_ports.set_sensitive(true);
                     ui.entry_modbus_address.set_sensitive(true);
                     ui.button_reset.set_sensitive(true);
@@ -180,7 +175,7 @@ fn ui_init(app: &gtk::Application) {
 
     button_reset.connect_clicked(move |_| {
         GLOBAL.with(|global| {
-            if let Some((ref ui, _)) = *global.borrow() {
+            if let Some(ref ui) = *global.borrow() {
                 ui.entry_modbus_address.set_text("247");
             }
         });
@@ -202,10 +197,6 @@ fn ui_init(app: &gtk::Application) {
         toggle_button_connect_toggle_signal,
         toggle_button_connect,
         application_window: application_window.clone(),
-    };
-
-    let _state = State {
-        connected_port: None,
     };
 
     application_window.show_all();
