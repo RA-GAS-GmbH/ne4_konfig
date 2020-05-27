@@ -1,10 +1,10 @@
 use futures::channel::mpsc::*;
+use futures::future::TryFutureExt;
+use futures::sink::SinkExt;
 use std::thread;
-use tokio_serial::*;
 use tokio::runtime::Runtime;
 use tokio::time::*;
-use futures::sink::SinkExt;
-use futures::future::TryFutureExt;
+use tokio_serial::*;
 
 #[derive(Debug)]
 pub enum TokioCommand {
@@ -56,7 +56,7 @@ impl TokioThread {
                             if port.is_some() {
                                 info!("Change port to '{}' using settings {:?}", &name, &settings);
                             }
-                        },
+                        }
                         TokioCommand::GeneralError => {}
                     }
                 }
@@ -69,7 +69,10 @@ impl TokioThread {
         }
     }
 
-    pub fn send_port_change_port_cmd(&self, port_name: String) -> std::result::Result<(), GeneralError> {
+    pub fn send_port_change_port_cmd(
+        &self,
+        port_name: String,
+    ) -> std::result::Result<(), GeneralError> {
         let mut tx = self.ui_event_sender.clone();
         tx.send(TokioCommand::ChangePort(port_name))
             .map_err(|e| GeneralError::Send(TokioCommand::GeneralError));

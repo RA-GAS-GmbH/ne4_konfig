@@ -134,10 +134,13 @@ fn ui_init(app: &gtk::Application) {
     //     }
     // });
 
-    let ui_event_sender1 = ui_event_sender.clone();
+    let ui_event_sender_clone = ui_event_sender.clone();
     let combo_box_text_ports_changed_signal = combo_box_text_ports.connect_changed(move |s| {
         if let Some(port_name) = s.get_active_text() {
-            ui_event_sender1.clone().try_send(TokioCommand::ChangePort("".into())).expect("Send UI event");
+            ui_event_sender_clone
+                .clone()
+                .try_send(TokioCommand::ChangePort("".into()))
+                .expect("Send UI event");
         }
     });
 
@@ -166,9 +169,12 @@ fn ui_init(app: &gtk::Application) {
         }
     });
 
-    let ui_event_sender2 = ui_event_sender.clone();
+    let ui_event_sender_clone = ui_event_sender.clone();
     button_nullpunkt.connect_clicked(move |_| {
-        ui_event_sender2.clone().try_send(TokioCommand::Connect).expect("send UI event from Nullpunkt button");
+        ui_event_sender_clone
+            .clone()
+            .try_send(TokioCommand::Connect)
+            .expect("send UI event from Nullpunkt button");
     });
 
     button_reset.connect_clicked(move |_| {
@@ -236,9 +242,17 @@ fn ui_init(app: &gtk::Application) {
 
             while let Some(event) = data_event_receiver.next().await {
                 println!("Got some data_event: {:?}", event);
-
+                match event {
+                    TokioResponse::Connect(thing) => {
+                        info!("Connect!: {:?}", &thing);
+                        log_status(
+                            &ui,
+                            StatusContext::PortOperation,
+                            &format!("Connect!: {:?}", &thing),
+                        );
+                    }
+                }
             }
-
         }
     };
 
