@@ -1,7 +1,4 @@
-use crate::{
-    serial_thread::{list_ports, SerialResponse, SerialThread},
-    tokio_thread::*,
-};
+use crate::tokio_thread::{list_ports, TokioCommand, TokioResponse, TokioThread};
 use chrono::Utc;
 use gio::prelude::*;
 use glib::{signal_handler_block, signal_handler_unblock};
@@ -42,7 +39,7 @@ pub struct State {
 
 // Thread local storage
 thread_local!(
-    pub static GLOBAL: RefCell<Option<(Ui, SerialThread, State)>> = RefCell::new(None)
+    pub static GLOBAL: RefCell<Option<(Ui, State)>> = RefCell::new(None)
 );
 
 pub fn launch() {
@@ -147,7 +144,7 @@ fn ui_init(app: &gtk::Application) {
     let toggle_button_connect_toggle_signal = toggle_button_connect.connect_clicked(move |s| {
         if s.get_active() {
             GLOBAL.with(|global| {
-                if let Some((ref ui, _, _)) = *global.borrow() {
+                if let Some((ref ui, _)) = *global.borrow() {
                     ui.combo_box_text_ports.set_sensitive(false);
                     ui.entry_modbus_address.set_sensitive(false);
                     ui.button_reset.set_sensitive(false);
@@ -158,7 +155,7 @@ fn ui_init(app: &gtk::Application) {
             });
         } else {
             GLOBAL.with(|global| {
-                if let Some((ref ui, _, _)) = *global.borrow() {
+                if let Some((ref ui, _)) = *global.borrow() {
                     ui.combo_box_text_ports.set_sensitive(true);
                     ui.entry_modbus_address.set_sensitive(true);
                     ui.button_reset.set_sensitive(true);
@@ -179,13 +176,13 @@ fn ui_init(app: &gtk::Application) {
 
     button_reset.connect_clicked(move |_| {
         GLOBAL.with(|global| {
-            if let Some((ref ui, _, _)) = *global.borrow() {
+            if let Some((ref ui, _)) = *global.borrow() {
                 ui.entry_modbus_address.set_text("247");
             }
         });
     });
 
-    let ui = Ui {
+    let mut ui = Ui {
         button_reset,
         button_nullpunkt,
         button_messgas,
@@ -220,17 +217,6 @@ fn ui_init(app: &gtk::Application) {
         .load_from_path("resources/style.css")
         .expect("Failed to load CSS stylesheet");
 
-    // // Start SerialThread
-    // GLOBAL.with(move |global| {
-    //     *global.borrow_mut() = Some((
-    //         ui,
-    //         SerialThread::new(|| {
-    //             glib::idle_add(receive);
-    //         }),
-    //         state,
-    //     ));
-    // });
-
     application_window.show_all();
 
     // future on main thread has access to UI
@@ -252,14 +238,76 @@ fn ui_init(app: &gtk::Application) {
                         );
                     }
                     TokioResponse::PortsFound(ports) => {
-                        info!("New Ports found!: {:?}", &ports);
+                        info!("Found some ports!");
+                        // Determine if the new found port match existing ones
+                        let replace = {
+                            if ports.len() != ui.combo_box_text_ports_map.len() {
+                                true
+                            } else {
+                                ports
+                                    .iter()
+                                    .enumerate()
+                                    .map(|t| ui.combo_box_text_ports_map[t.1] != t.0 as u32)
+                                    .all(|x| x)
+                            }
+                        };
+
+                        if replace {
+                            // First save whichever the currently-selected port is
+                            let current_port = {
+                                let active_port = ui.combo_box_text_ports.get_active().unwrap_or(0);
+                                let mut n = None;
+                                for (p, i) in &ui.combo_box_text_ports_map {
+                                    if *i == active_port {
+                                        n = Some(p.to_owned());
+                                        break;
+                                    }
+                                }
+                                n
+                            };
+
+                            ui.combo_box_text_ports.remove_all();
+                            ui.combo_box_text_ports_map.clear();
+                            if ports.is_empty() {
+                                ui.combo_box_text_ports
+                                    .append(None, "Keine Schnittstelle gefunden");
+                                ui.combo_box_text_ports.set_sensitive(false);
+                                &ui.toggle_button_connect.set_sensitive(false);
+                            } else {
+                                for (i, p) in (0u32..).zip(ports.into_iter()) {
+                                    ui.combo_box_text_ports.append(None, &p);
+                                    ui.combo_box_text_ports_map.insert(p, i);
+                                }
+                                ui.combo_box_text_ports.set_sensitive(true);
+                                ui.toggle_button_connect.set_sensitive(true);
+                            }
+                            signal_handler_block(
+                                &ui.combo_box_text_ports,
+                                &ui.combo_box_text_ports_changed_signal,
+                            );
+                            if let Some(p) = current_port {
+                                ui.combo_box_text_ports.set_active(Some(
+                                    *ui.combo_box_text_ports_map.get(&p).unwrap_or(&0),
+                                ));
+                            } else {
+                                ui.combo_box_text_ports.set_active(Some(0));
+                            }
+                            signal_handler_unblock(
+                                &ui.combo_box_text_ports,
+                                &ui.combo_box_text_ports_changed_signal,
+                            );
+                        }
+                    }
+                    TokioResponse::UnexpectedDisconnection(_) => unimplemented!(),
+                    // Catch all for unimplemented events
+                    ref e => {
+                        info!("Unhandled Event in GUI!: {:?}", &e);
                         log_status(
                             &ui,
                             StatusContext::PortOperation,
-                            &format!("New Ports found!: {:?}", &ports),
+                            &format!("Unhandled Event in GUI!: {:?}", &e),
                         );
                     }
-                    TokioResponse::UnexpectedDisconnection(_) => {}
                 }
             }
         }
@@ -267,93 +315,6 @@ fn ui_init(app: &gtk::Application) {
 
     let c = glib::MainContext::default();
     c.spawn_local(future);
-}
-
-// Die `receive` Funktion handelt "events" vom SerialThread
-fn receive() -> glib::Continue {
-    GLOBAL.with(|global| {
-        if let Some((ref mut ui, ref serial_thread, ref mut _state)) = *global.borrow_mut() {
-            match serial_thread.from_port_chan_rx.try_recv() {
-                Ok(SerialResponse::PortsFound(ports)) => {
-                    info!("Found some ports!");
-                    // Determine if the new found port match existing ones
-                    let replace = {
-                        if ports.len() != ui.combo_box_text_ports_map.len() {
-                            true
-                        } else {
-                            ports
-                                .iter()
-                                .enumerate()
-                                .map(|t| ui.combo_box_text_ports_map[t.1] != t.0 as u32)
-                                .all(|x| x)
-                        }
-                    };
-
-                    if replace {
-                        // First save whichever the currently-selected port is
-                        let current_port = {
-                            let active_port = ui.combo_box_text_ports.get_active().unwrap_or(0);
-                            let mut n = None;
-                            for (p, i) in &ui.combo_box_text_ports_map {
-                                if *i == active_port {
-                                    n = Some(p.to_owned());
-                                    break;
-                                }
-                            }
-                            n
-                        };
-
-                        ui.combo_box_text_ports.remove_all();
-                        ui.combo_box_text_ports_map.clear();
-                        if ports.is_empty() {
-                            ui.combo_box_text_ports
-                                .append(None, "Keine Schnittstelle gefunden");
-                            ui.combo_box_text_ports.set_sensitive(false);
-                            &ui.toggle_button_connect.set_sensitive(false);
-                        } else {
-                            for (i, p) in (0u32..).zip(ports.into_iter()) {
-                                ui.combo_box_text_ports.append(None, &p);
-                                ui.combo_box_text_ports_map.insert(p, i);
-                            }
-                            ui.combo_box_text_ports.set_sensitive(true);
-                            ui.toggle_button_connect.set_sensitive(true);
-                        }
-                        signal_handler_block(
-                            &ui.combo_box_text_ports,
-                            &ui.combo_box_text_ports_changed_signal,
-                        );
-                        if let Some(p) = current_port {
-                            ui.combo_box_text_ports.set_active(Some(
-                                *ui.combo_box_text_ports_map.get(&p).unwrap_or(&0),
-                            ));
-                        } else {
-                            ui.combo_box_text_ports.set_active(Some(0));
-                        }
-                        signal_handler_unblock(
-                            &ui.combo_box_text_ports,
-                            &ui.combo_box_text_ports_changed_signal,
-                        );
-                    }
-                }
-                Ok(e) => {
-                    info!("Unhandled Event in GUI!: {:?}", &e);
-                    log_status(
-                        &ui,
-                        StatusContext::PortOperation,
-                        &format!("Unhandled Event in GUI!: {:?}", &e),
-                    );
-                }
-                Err(e) => {
-                    log_status(
-                        &ui,
-                        StatusContext::PortOperation,
-                        &format!("Error: {:?}", e),
-                    );
-                }
-            }
-        }
-    });
-    glib::Continue(false)
 }
 
 /// Log messages to the status bar using the specific status context.

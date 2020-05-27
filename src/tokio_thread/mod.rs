@@ -1,12 +1,13 @@
 use futures::channel::mpsc::*;
 use futures::future::TryFutureExt;
 use futures::sink::SinkExt;
+use futures::stream::StreamExt;
+use std::cell::RefCell;
+use std::rc::Rc;
 use std::thread;
 use tokio::runtime::Runtime;
 use tokio::time::*;
 use tokio_serial::*;
-use std::rc::Rc;
-use std::cell::RefCell;
 
 #[derive(Debug)]
 pub enum TokioCommand {
@@ -48,17 +49,15 @@ impl TokioThread {
 
             let mut rt = Runtime::new().expect("create tokio runtime");
             rt.block_on(async {
-                use futures::sink::SinkExt;
-                use futures::stream::StreamExt;
-
+                let mut data_event_sender2 = data_event_sender.clone();
                 tokio::spawn(async move {
-                    let mut interval = interval(Duration::from_millis(100));
+                    let mut port: Option<Box<dyn tokio_serial::SerialPort>> = None;
+                    let mut interval = interval(Duration::from_millis(1000));
                     loop {
                         interval.tick().await;
 
                         let ports = port_scan().await;
 
-                        let mut port: Option<Box<dyn tokio_serial::SerialPort>> = None;
                         let message = {
                             if let Some(ref mut p) = port {
                                 if let Some(name) = p.name() {
@@ -75,23 +74,24 @@ impl TokioThread {
                             }
                         };
                         if let TokioResponse::UnexpectedDisconnection(_) = message {
-                            // port = None;
+                            port = None;
                         }
-
+                        data_event_sender2.send(message).await;
                     }
                 });
 
                 while let Some(event) = ui_event_receiver.next().await {
                     println!("Got event: {:?}", event);
                     match event {
+                        _ => {}
                         TokioCommand::Connect => data_event_sender
                             .send(TokioResponse::Connect(connect().await))
                             .await
                             .expect("send connect event"),
                         TokioCommand::ChangePort(name) => {
-                            // if port.is_some() {
-                            //     info!("Change port to '{}' using settings {:?}", &name, &settings);
-                            // }
+                            if port.is_some() {
+                                info!("Change port to '{}' using settings {:?}", &name, &settings);
+                            }
                         }
                         TokioCommand::GeneralError => {}
                     }

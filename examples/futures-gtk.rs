@@ -8,10 +8,6 @@ fn main() {
 
     thread::spawn(move || {
         let mut runtime = Runtime::new().expect("Runtime");
-        runtime.block_on(async {
-            loop {
-
-            }
-        })
+        runtime.block_on(async { loop {} })
     });
 }
