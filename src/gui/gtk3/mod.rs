@@ -6,6 +6,7 @@ use gtk::prelude::*;
 use gtk::Application;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 #[macro_use]
 pub mod macros;
@@ -117,27 +118,30 @@ fn ui_init(app: &gtk::Application) {
 
     application_window.set_application(Some(app));
 
-    // Callbacks
-    // let combo_box_text_ports_changed_signal = combo_box_text_ports.connect_changed(move |s| {
-    //     if let Some(port_name) = s.get_active_text() {
-    //         GLOBAL.with(|global| {
-    //             if let Some((_, ref serial_thread, _)) = *global.borrow() {
-    //                 match serial_thread.send_port_change_port_cmd(port_name.to_string()) {
-    //                     Err(_) => {}
-    //                     Ok(_) => {}
-    //                 }
-    //             }
-    //         });
-    //     }
-    // });
+    // Set CSS styles for the entire application.
+    let css_provider = gtk::CssProvider::new();
+    let display = gdk::Display::get_default().expect("Couldn't open default GDK display");
+    let screen = display.get_default_screen();
+    gtk::StyleContext::add_provider_for_screen(
+        &screen,
+        &css_provider,
+        gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+    );
+    css_provider
+        .load_from_path("resources/style.css")
+        .expect("Failed to load CSS stylesheet");
 
-    let ui_event_sender_clone = ui_event_sender.clone();
+    // Callbacks
+    // let tokio_thread2 = tokio_thread.clone();
     let combo_box_text_ports_changed_signal = combo_box_text_ports.connect_changed(move |s| {
         if let Some(port_name) = s.get_active_text() {
-            ui_event_sender_clone
-                .clone()
-                .try_send(TokioCommand::ChangePort("".into()))
-                .expect("Send UI event");
+            // match tokio_thread.send_port_change_port_cmd(port_name.to_string()) {
+            //     _ => {}
+            // }
+            //     ui_event_sender_clone
+            //         .clone()
+            //         .try_send(TokioCommand::ChangePort("".into()))
+            //         .expect("Send UI event");
         }
     });
 
@@ -200,28 +204,15 @@ fn ui_init(app: &gtk::Application) {
         application_window: application_window.clone(),
     };
 
-    let state = State {
+    let _state = State {
         connected_port: None,
     };
-
-    // Set CSS styles for the entire application.
-    let css_provider = gtk::CssProvider::new();
-    let display = gdk::Display::get_default().expect("Couldn't open default GDK display");
-    let screen = display.get_default_screen();
-    gtk::StyleContext::add_provider_for_screen(
-        &screen,
-        &css_provider,
-        gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
-    );
-    css_provider
-        .load_from_path("resources/style.css")
-        .expect("Failed to load CSS stylesheet");
 
     application_window.show_all();
 
     // future on main thread has access to UI
     let future = {
-        let button_nullpunkt = &ui.button_nullpunkt.clone();
+        let _button_nullpunkt = &ui.button_nullpunkt.clone();
         let mut data_event_receiver = data_event_receiver;
         async move {
             use futures::stream::StreamExt;

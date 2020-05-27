@@ -2,8 +2,6 @@ use futures::channel::mpsc::*;
 use futures::future::TryFutureExt;
 use futures::sink::SinkExt;
 use futures::stream::StreamExt;
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::thread;
 use tokio::runtime::Runtime;
 use tokio::time::*;
@@ -43,9 +41,8 @@ impl TokioThread {
         let (mut data_event_sender, data_event_receiver) = futures::channel::mpsc::channel(0);
 
         thread::spawn(move || {
-            let mut port: Option<Box<dyn tokio_serial::SerialPort>> = None;
-            let mut settings: SerialPortSettings = Default::default();
-            let loop_time = 10usize; // ms
+            let port: Option<Box<dyn tokio_serial::SerialPort>> = None;
+            let settings: SerialPortSettings = Default::default();
 
             let mut rt = Runtime::new().expect("create tokio runtime");
             rt.block_on(async {
@@ -76,14 +73,16 @@ impl TokioThread {
                         if let TokioResponse::UnexpectedDisconnection(_) = message {
                             port = None;
                         }
-                        data_event_sender2.send(message).await;
+                        data_event_sender2
+                            .send(message)
+                            .await
+                            .expect("data_event_sender send message");
                     }
                 });
 
                 while let Some(event) = ui_event_receiver.next().await {
                     println!("Got event: {:?}", event);
                     match event {
-                        _ => {}
                         TokioCommand::Connect => data_event_sender
                             .send(TokioResponse::Connect(connect().await))
                             .await
