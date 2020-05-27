@@ -1,6 +1,8 @@
-use crate::serial_thread::{list_ports, SerialResponse, SerialThread};
+use crate::{
+    serial_thread::{list_ports, SerialResponse, SerialThread},
+    tokio_thread::*,
+};
 use chrono::Utc;
-use futures::channel::mpsc::{Receiver, Sender};
 use gio::prelude::*;
 use glib::{signal_handler_block, signal_handler_unblock};
 use gtk::prelude::*;
@@ -18,6 +20,8 @@ enum StatusContext {
 
 pub struct Ui {
     button_reset: gtk::Button,
+    button_nullpunkt: gtk::Button,
+    button_messgas: gtk::Button,
     combo_box_text_ports_changed_signal: glib::SignalHandlerId,
     combo_box_text_ports_map: HashMap<String, u32>,
     combo_box_text_ports: gtk::ComboBoxText,
@@ -56,6 +60,11 @@ pub fn launch() {
 }
 
 fn ui_init(app: &gtk::Application) {
+    // Create/ start tokio thread
+    let tokio_thread = TokioThread::new();
+    let mut ui_event_sender = tokio_thread.ui_event_sender;
+    let data_event_receiver = tokio_thread.data_event_receiver;
+
     let glade_str = include_str!("main.ui");
     let builder = gtk::Builder::new_from_string(glade_str);
     let application_window: gtk::ApplicationWindow = build!(builder, "application_window");
@@ -97,6 +106,8 @@ fn ui_init(app: &gtk::Application) {
     let label_sensor_type_value: gtk::Label = build!(builder, "label_sensor_type_value");
     let label_sensor_working_mode_value: gtk::Label =
         build!(builder, "label_sensor_working_mode_value");
+    let button_nullpunkt: gtk::Button = build!(builder, "button_nullpunkt");
+    let button_messgas: gtk::Button = build!(builder, "button_messgas");
 
     // ListStore Sensor Values
     let list_store_sensor: gtk::ListStore = build!(builder, "list_store_sensor");
@@ -110,16 +121,23 @@ fn ui_init(app: &gtk::Application) {
     application_window.set_application(Some(app));
 
     // Callbacks
+    // let combo_box_text_ports_changed_signal = combo_box_text_ports.connect_changed(move |s| {
+    //     if let Some(port_name) = s.get_active_text() {
+    //         GLOBAL.with(|global| {
+    //             if let Some((_, ref serial_thread, _)) = *global.borrow() {
+    //                 match serial_thread.send_port_change_port_cmd(port_name.to_string()) {
+    //                     Err(_) => {}
+    //                     Ok(_) => {}
+    //                 }
+    //             }
+    //         });
+    //     }
+    // });
+
+    let ui_event_sender1 = ui_event_sender.clone();
     let combo_box_text_ports_changed_signal = combo_box_text_ports.connect_changed(move |s| {
         if let Some(port_name) = s.get_active_text() {
-            GLOBAL.with(|global| {
-                if let Some((_, ref serial_thread, _)) = *global.borrow() {
-                    match serial_thread.send_port_change_port_cmd(port_name.to_string()) {
-                        Err(_) => {}
-                        Ok(_) => {}
-                    }
-                }
-            });
+            ui_event_sender1.clone().try_send(TokioCommand::ChangePort("".into())).expect("Send UI event");
         }
     });
 
@@ -148,6 +166,11 @@ fn ui_init(app: &gtk::Application) {
         }
     });
 
+    let ui_event_sender2 = ui_event_sender.clone();
+    button_nullpunkt.connect_clicked(move |_| {
+        ui_event_sender2.clone().try_send(TokioCommand::Connect).expect("send UI event from Nullpunkt button");
+    });
+
     button_reset.connect_clicked(move |_| {
         GLOBAL.with(|global| {
             if let Some((ref ui, _, _)) = *global.borrow() {
@@ -158,6 +181,8 @@ fn ui_init(app: &gtk::Application) {
 
     let ui = Ui {
         button_reset,
+        button_nullpunkt,
+        button_messgas,
         combo_box_text_ports_changed_signal,
         combo_box_text_ports_map,
         combo_box_text_ports,
@@ -176,37 +201,6 @@ fn ui_init(app: &gtk::Application) {
         connected_port: None,
     };
 
-    // Start SerialThread
-    GLOBAL.with(move |global| {
-        *global.borrow_mut() = Some((
-            ui,
-            SerialThread::new(|| {
-                glib::idle_add(receive);
-            }),
-            state,
-        ));
-    });
-
-    application_window.show_all();
-
-    // // future on main thread has access to UI
-    // let future = {
-    //     let mut data_event_receiver = data_event_receiver
-    //     .replace(None)
-    //     .take()
-    //     .expect("data_event_receiver");
-    //     async move {
-    //         use futures::stream::StreamExt;
-    //
-    //         while let Some(event) = data_event_receiver.next().await {
-    //             println!("data_event: {:?}", event);
-    //             // match event {
-    //             //
-    //             // }
-    //         }
-    //     }
-    // };
-
     // Set CSS styles for the entire application.
     let css_provider = gtk::CssProvider::new();
     let display = gdk::Display::get_default().expect("Couldn't open default GDK display");
@@ -219,6 +213,37 @@ fn ui_init(app: &gtk::Application) {
     css_provider
         .load_from_path("resources/style.css")
         .expect("Failed to load CSS stylesheet");
+
+    // // Start SerialThread
+    // GLOBAL.with(move |global| {
+    //     *global.borrow_mut() = Some((
+    //         ui,
+    //         SerialThread::new(|| {
+    //             glib::idle_add(receive);
+    //         }),
+    //         state,
+    //     ));
+    // });
+
+    application_window.show_all();
+
+    // future on main thread has access to UI
+    let future = {
+        let button_nullpunkt = &ui.button_nullpunkt.clone();
+        let mut data_event_receiver = data_event_receiver;
+        async move {
+            use futures::stream::StreamExt;
+
+            while let Some(event) = data_event_receiver.next().await {
+                println!("Got some data_event: {:?}", event);
+
+            }
+
+        }
+    };
+
+    let c = glib::MainContext::default();
+    c.spawn_local(future);
 }
 
 // Die `receive` Funktion handelt "events" vom SerialThread
