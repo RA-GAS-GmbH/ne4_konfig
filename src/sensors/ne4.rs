@@ -15,7 +15,7 @@ pub struct NE4 {
 impl NE4 {
     pub fn new() -> Self {
         NE4 {
-            rreg: vec![0u16; 40],
+            rreg: vec![0u16; 50],
         }
     }
 
@@ -118,7 +118,7 @@ mod tests {
     #[test]
     fn wiring() {
         let ne4 = NE4::new();
-        assert_eq!(ne4.rreg.len(), 100);
+        assert_eq!(ne4.rreg.len(), 50);
     }
 
     #[test]
