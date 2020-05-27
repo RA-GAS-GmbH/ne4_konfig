@@ -5,6 +5,8 @@ use std::thread;
 use tokio::runtime::Runtime;
 use tokio::time::*;
 use tokio_serial::*;
+use std::rc::Rc;
+use std::cell::RefCell;
 
 #[derive(Debug)]
 pub enum TokioCommand {
@@ -16,6 +18,12 @@ pub enum TokioCommand {
 #[derive(Debug)]
 pub enum TokioResponse {
     Connect(()),
+    /// A sorted list of ports found during a port scan. Guaranteed to contain the currently-active
+    /// port if there is one.
+    PortsFound(Vec<String>),
+    /// A port error has occurred that is likely the result of a serial device disconnected. This
+    /// also returns a list of all still-attached serial devices.
+    UnexpectedDisconnection(Vec<String>),
 }
 
 #[derive(Debug)]
@@ -37,13 +45,41 @@ impl TokioThread {
             let mut port: Option<Box<dyn tokio_serial::SerialPort>> = None;
             let mut settings: SerialPortSettings = Default::default();
             let loop_time = 10usize; // ms
-            let port_scan_time = Duration::from_secs(5);
-            let mut last_port_scan_time = Instant::now();
 
             let mut rt = Runtime::new().expect("create tokio runtime");
             rt.block_on(async {
                 use futures::sink::SinkExt;
                 use futures::stream::StreamExt;
+
+                tokio::spawn(async move {
+                    let mut interval = interval(Duration::from_millis(100));
+                    loop {
+                        interval.tick().await;
+
+                        let ports = port_scan().await;
+
+                        let mut port: Option<Box<dyn tokio_serial::SerialPort>> = None;
+                        let message = {
+                            if let Some(ref mut p) = port {
+                                if let Some(name) = p.name() {
+                                    if ports.binary_search(&name).is_err() {
+                                        TokioResponse::UnexpectedDisconnection(ports)
+                                    } else {
+                                        TokioResponse::PortsFound(ports)
+                                    }
+                                } else {
+                                    TokioResponse::PortsFound(ports)
+                                }
+                            } else {
+                                TokioResponse::PortsFound(ports)
+                            }
+                        };
+                        if let TokioResponse::UnexpectedDisconnection(_) = message {
+                            // port = None;
+                        }
+
+                    }
+                });
 
                 while let Some(event) = ui_event_receiver.next().await {
                     println!("Got event: {:?}", event);
@@ -53,9 +89,9 @@ impl TokioThread {
                             .await
                             .expect("send connect event"),
                         TokioCommand::ChangePort(name) => {
-                            if port.is_some() {
-                                info!("Change port to '{}' using settings {:?}", &name, &settings);
-                            }
+                            // if port.is_some() {
+                            //     info!("Change port to '{}' using settings {:?}", &name, &settings);
+                            // }
                         }
                         TokioCommand::GeneralError => {}
                     }
@@ -85,6 +121,14 @@ pub(crate) fn list_ports() -> tokio_serial::Result<Vec<String>> {
         Ok(ports) => Ok(ports.into_iter().map(|x| x.port_name).collect()),
         Err(e) => Err(e),
     }
+}
+
+async fn port_scan() -> Vec<String> {
+    let mut ports = list_ports().expect("Scanning for ports should never fail");
+    ports.sort();
+    debug!("Found ports: {:?}", &ports);
+
+    ports
 }
 
 async fn connect() -> () {

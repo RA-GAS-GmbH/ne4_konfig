@@ -251,6 +251,15 @@ fn ui_init(app: &gtk::Application) {
                             &format!("Connect!: {:?}", &thing),
                         );
                     }
+                    TokioResponse::PortsFound(ports) => {
+                        info!("New Ports found!: {:?}", &ports);
+                        log_status(
+                            &ui,
+                            StatusContext::PortOperation,
+                            &format!("New Ports found!: {:?}", &ports),
+                        );
+                    }
+                    TokioResponse::UnexpectedDisconnection(_) => {}
                 }
             }
         }
