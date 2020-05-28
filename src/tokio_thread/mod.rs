@@ -175,7 +175,7 @@ async fn update_sensor(port: String, modbus_address: u8) -> Result<Vec<u16>> {
     let mut ctx = rtu::connect_slave(port, modbus_address.into()).await?;
 
     for (i, reg) in registers.iter_mut().enumerate() {
-        let value = ctx.read_holding_registers(i as u16, 1).await?;
+        let value = ctx.read_input_registers(i as u16, 1).await?;
         *reg = value[0];
     }
     Ok(registers)
