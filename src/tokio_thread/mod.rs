@@ -35,6 +35,8 @@ pub enum TokioCommand {
     Connect,
     ChangePort(String),
     GeneralError,
+    Nullgas,
+    Messgas,
     UpdateSensor(Option<String>, u8),
 }
 
@@ -114,11 +116,13 @@ impl TokioThread {
                                 info!("Change port to '{}' using settings {:?}", &name, &settings);
                             }
                         }
+                        TokioCommand::Nullgas => {}
+                        TokioCommand::Messgas => {}
                         TokioCommand::GeneralError => {}
                         TokioCommand::UpdateSensor(port, modbus_address) => {
                             // match modbus_address {}
                             match timeout(
-                                Duration::from_millis(2000),
+                                Duration::from_millis(4000),
                                 update_sensor(port.unwrap(), modbus_address),
                             )
                             .await

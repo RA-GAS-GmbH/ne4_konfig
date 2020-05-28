@@ -23,10 +23,11 @@ pub struct Ui {
     combo_box_text_ports_changed_signal: glib::SignalHandlerId,
     combo_box_text_ports_map: HashMap<String, u32>,
     combo_box_text_ports: gtk::ComboBoxText,
+    combo_box_text_sensor_working_mode_map: HashMap<String, u16>,
+    combo_box_text_sensor_working_mode: gtk::ComboBoxText,
     entry_modbus_address: gtk::Entry,
     label_sensor_type_value: gtk::Label,
     label_sensor_type_value_value: gtk::Label,
-    label_sensor_working_mode_value: gtk::Label,
     list_store_sensor: gtk::ListStore,
     statusbar_application: gtk::Statusbar,
     statusbar_contexts: HashMap<StatusContext, u32>,
@@ -94,14 +95,34 @@ fn ui_init(app: &gtk::Application) {
         combo_box_text_ports.set_active(Some(0));
         combo_box_text_ports.set_sensitive(false);
     }
+
+    // Sensor Working Mode selector
+    let combo_box_text_sensor_working_mode: gtk::ComboBoxText =
+        build!(builder, "combo_box_text_sensor_working_mode");
+    let mut combo_box_text_sensor_working_mode_map = HashMap::new();
+    combo_box_text_sensor_working_mode_map = [
+        ("Unkonfiguriert".to_string(), 0),
+        ("CO 1000 ppm".to_string(), 10),
+        ("CO 300 ppm".to_string(), 12),
+        ("NO 250 ppm".to_string(), 20),
+        ("NO2 20 ppm".to_string(), 30),
+        ("NH3 1000 ppm".to_string(), 40),
+        ("NH3 100 ppm".to_string(), 42),
+        ("CL2 10 ppm".to_string(), 50),
+        ("H2S 25 ppm".to_string(), 60),
+    ]
+    .iter()
+    .cloned()
+    .collect();
+    for (name, id) in combo_box_text_sensor_working_mode_map.clone() {
+        combo_box_text_sensor_working_mode.append(Some(&id.to_string()), &name);
+    }
     // Modbus Adresse
     let entry_modbus_address: gtk::Entry = build!(builder, "entry_modbus_address");
     // Reset Button
     let button_reset: gtk::Button = build!(builder, "button_reset");
     // Labels Sensor Werte
     let label_sensor_type_value: gtk::Label = build!(builder, "label_sensor_type_value");
-    let label_sensor_working_mode_value: gtk::Label =
-        build!(builder, "label_sensor_working_mode_value");
     let button_nullpunkt: gtk::Button = build!(builder, "button_nullpunkt");
     let button_messgas: gtk::Button = build!(builder, "button_messgas");
 
@@ -136,49 +157,57 @@ fn ui_init(app: &gtk::Application) {
     let combo_box_text_ports_changed_signal = combo_box_text_ports.connect_changed(move |s| {});
 
     let toggle_button_connect_toggle_signal = toggle_button_connect.connect_clicked(clone!(
-        @strong combo_box_text_ports,
-            @strong entry_modbus_address,
             @strong button_reset,
+            @strong combo_box_text_ports_map,
+            @strong combo_box_text_sensor_working_mode,
+            @strong entry_modbus_address,
             @strong label_sensor_type_value,
-            @strong label_sensor_working_mode_value => move |s| {
+        @strong combo_box_text_ports,
+        @strong ui_event_sender
+            => move |s| {
         if s.get_active() {
             combo_box_text_ports.set_sensitive(false);
+            combo_box_text_sensor_working_mode.set_sensitive(false);
             entry_modbus_address.set_sensitive(false);
             button_reset.set_sensitive(false);
-            label_sensor_type_value.set_text("RA-GAS GmbH - NE4-MOD-BUS");
-            label_sensor_working_mode_value.set_text("10 CO 1000ppm");
+            // label_sensor_type_value.set_text("RA-GAS GmbH - NE4-MOD-BUS");
+            // get port
+            let active_port = combo_box_text_ports.get_active().unwrap_or(0);
+            let mut port = None;
+            for (p, i) in &combo_box_text_ports_map {
+                if *i == active_port {
+                    port = Some(p.to_owned());
+                    break;
+                }
+            }
+            // get modbus_address
+            let modbus_address = entry_modbus_address.get_text().unwrap_or("0".into());
+            ui_event_sender
+                .clone()
+                .try_send(TokioCommand::UpdateSensor(port, modbus_address.parse().unwrap()))
+                .expect("send UI event from Nullpunkt button");
         } else {
             combo_box_text_ports.set_sensitive(true);
+            combo_box_text_sensor_working_mode.set_sensitive(true);
             entry_modbus_address.set_sensitive(true);
             button_reset.set_sensitive(true);
             label_sensor_type_value.set_text("");
-            label_sensor_working_mode_value.set_text("");
         }
     }));
 
     button_nullpunkt.connect_clicked(clone!(@strong ui_event_sender => move |_| {
         ui_event_sender
             .clone()
-            .try_send(TokioCommand::Connect)
+            .try_send(TokioCommand::Nullgas)
             .expect("send UI event from Nullpunkt button");
     }));
 
-    button_messgas.connect_clicked(clone!(@strong combo_box_text_ports_map, @strong combo_box_text_ports, @strong entry_modbus_address, @strong ui_event_sender => move |_| {
-        // get port
-        let active_port = combo_box_text_ports.get_active().unwrap_or(0);
-        let mut port = None;
-        for (p, i) in &combo_box_text_ports_map {
-            if *i == active_port {
-                port = Some(p.to_owned());
-                break;
-            }
-        }
-        // get modbus_address
-        let modbus_address = entry_modbus_address.get_text().unwrap_or("0".into());
-        ui_event_sender
-            .clone()
-            .try_send(TokioCommand::UpdateSensor(port, modbus_address.parse().unwrap()))
-            .expect("send UI event from Nullpunkt button");
+    button_messgas.connect_clicked(clone!(
+        @strong combo_box_text_ports_map,
+        @strong combo_box_text_ports,
+        @strong entry_modbus_address,
+        @strong ui_event_sender => move |_| {
+
     }));
 
     button_reset.connect_clicked(clone!(@strong entry_modbus_address => move |_| {
@@ -194,10 +223,11 @@ fn ui_init(app: &gtk::Application) {
         combo_box_text_ports_changed_signal,
         combo_box_text_ports_map,
         combo_box_text_ports,
+        combo_box_text_sensor_working_mode_map,
+        combo_box_text_sensor_working_mode,
         entry_modbus_address,
         label_sensor_type_value,
         label_sensor_type_value_value,
-        label_sensor_working_mode_value,
         list_store_sensor,
         statusbar_application,
         statusbar_contexts: context_map,
@@ -294,9 +324,11 @@ fn ui_init(app: &gtk::Application) {
                     TokioResponse::UnexpectedDisconnection(_) => unimplemented!(),
                     // Catch all for unimplemented events
                     TokioResponse::UpdateSensorValues(values) => {
-                        info!("Update Sensor: {:?}", &values);
+                        let values = values.unwrap();
+                        info!("Update Sensor: {:?}", values[0]);
+                        &ui.combo_box_text_sensor_working_mode.set_active(Some(0));
                         &ui.label_sensor_type_value_value
-                            .set_text(&values.unwrap()[2].to_string());
+                            .set_text(&values[2].to_string());
                         // log_status(
                         //     &ui,
                         //     StatusContext::PortOperation,
