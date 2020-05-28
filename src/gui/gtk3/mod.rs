@@ -25,6 +25,7 @@ pub struct Ui {
     combo_box_text_ports: gtk::ComboBoxText,
     entry_modbus_address: gtk::Entry,
     label_sensor_type_value: gtk::Label,
+    label_sensor_type_value_value: gtk::Label,
     label_sensor_working_mode_value: gtk::Label,
     list_store_sensor: gtk::ListStore,
     statusbar_application: gtk::Statusbar,
@@ -76,6 +77,7 @@ fn ui_init(app: &gtk::Application) {
     let mut combo_box_text_ports_map = HashMap::new();
     if let Ok(mut ports) = list_ports() {
         ports.sort();
+        ports.reverse();
         if !ports.is_empty() {
             for (i, p) in (0u32..).zip(ports.into_iter()) {
                 combo_box_text_ports.append(None, &p);
@@ -112,6 +114,9 @@ fn ui_init(app: &gtk::Application) {
         toggle_button_connect.set_sensitive(false);
     }
 
+    let label_sensor_type_value_value: gtk::Label =
+        build!(builder, "label_sensor_type_value_value");
+
     application_window.set_application(Some(app));
 
     // Set CSS styles for the entire application.
@@ -130,26 +135,26 @@ fn ui_init(app: &gtk::Application) {
     // Callbacks
     let combo_box_text_ports_changed_signal = combo_box_text_ports.connect_changed(move |s| {});
 
-    let toggle_button_connect_toggle_signal =
-        toggle_button_connect.connect_clicked(clone!(@strong combo_box_text_ports,
-                @strong entry_modbus_address,
-                @strong button_reset,
-                @strong label_sensor_type_value,
-                @strong label_sensor_working_mode_value => move |s| {
-            if s.get_active() {
-                combo_box_text_ports.set_sensitive(false);
-                entry_modbus_address.set_sensitive(false);
-                button_reset.set_sensitive(false);
-                label_sensor_type_value.set_text("RA-GAS GmbH - NE4-MOD-BUS");
-                label_sensor_working_mode_value.set_text("10 CO 1000ppm");
-            } else {
-                combo_box_text_ports.set_sensitive(true);
-                entry_modbus_address.set_sensitive(true);
-                button_reset.set_sensitive(true);
-                label_sensor_type_value.set_text("");
-                label_sensor_working_mode_value.set_text("");
-            }
-        }));
+    let toggle_button_connect_toggle_signal = toggle_button_connect.connect_clicked(clone!(
+        @strong combo_box_text_ports,
+            @strong entry_modbus_address,
+            @strong button_reset,
+            @strong label_sensor_type_value,
+            @strong label_sensor_working_mode_value => move |s| {
+        if s.get_active() {
+            combo_box_text_ports.set_sensitive(false);
+            entry_modbus_address.set_sensitive(false);
+            button_reset.set_sensitive(false);
+            label_sensor_type_value.set_text("RA-GAS GmbH - NE4-MOD-BUS");
+            label_sensor_working_mode_value.set_text("10 CO 1000ppm");
+        } else {
+            combo_box_text_ports.set_sensitive(true);
+            entry_modbus_address.set_sensitive(true);
+            button_reset.set_sensitive(true);
+            label_sensor_type_value.set_text("");
+            label_sensor_working_mode_value.set_text("");
+        }
+    }));
 
     button_nullpunkt.connect_clicked(clone!(@strong ui_event_sender => move |_| {
         ui_event_sender
@@ -158,11 +163,30 @@ fn ui_init(app: &gtk::Application) {
             .expect("send UI event from Nullpunkt button");
     }));
 
-    button_reset.connect_clicked(clone!(@strong entry_modbus_address => move |_| {
+    button_messgas.connect_clicked(clone!(@strong combo_box_text_ports_map, @strong combo_box_text_ports, @strong entry_modbus_address, @strong ui_event_sender => move |_| {
+        // get port
+        let active_port = combo_box_text_ports.get_active().unwrap_or(0);
+        let mut port = None;
+        for (p, i) in &combo_box_text_ports_map {
+            if *i == active_port {
+                port = Some(p.to_owned());
+                break;
+            }
+        }
+        // get modbus_address
+        let modbus_address = entry_modbus_address.get_text().unwrap_or("0".into());
+        ui_event_sender
+            .clone()
+            .try_send(TokioCommand::UpdateSensor(port, modbus_address.parse().unwrap()))
+            .expect("send UI event from Nullpunkt button");
+    }));
 
+    button_reset.connect_clicked(clone!(@strong entry_modbus_address => move |_| {
         entry_modbus_address.set_text("247");
     }));
 
+    /// Diese Struct wird im Tokio Thread verwendet.
+    /// Zugriff auf die Elemente der UI
     let mut ui = Ui {
         button_reset,
         button_nullpunkt,
@@ -172,6 +196,7 @@ fn ui_init(app: &gtk::Application) {
         combo_box_text_ports,
         entry_modbus_address,
         label_sensor_type_value,
+        label_sensor_type_value_value,
         label_sensor_working_mode_value,
         list_store_sensor,
         statusbar_application,
@@ -262,15 +287,21 @@ fn ui_init(app: &gtk::Application) {
                             );
                         }
                     }
+                    TokioResponse::Timeout => {
+                        info!("Timeout!");
+                        log_status(&ui, StatusContext::PortOperation, &format!("Timeout!"));
+                    }
                     TokioResponse::UnexpectedDisconnection(_) => unimplemented!(),
                     // Catch all for unimplemented events
-                    ref e => {
-                        info!("Unhandled Event in GUI!: {:?}", &e);
-                        log_status(
-                            &ui,
-                            StatusContext::PortOperation,
-                            &format!("Unhandled Event in GUI!: {:?}", &e),
-                        );
+                    TokioResponse::UpdateSensorValues(values) => {
+                        info!("Update Sensor: {:?}", &values);
+                        &ui.label_sensor_type_value_value
+                            .set_text(&values.unwrap()[2].to_string());
+                        // log_status(
+                        //     &ui,
+                        //     StatusContext::PortOperation,
+                        //     &format!("Update Sensor: {:?}", &values),
+                        // );
                     }
                 }
             }
