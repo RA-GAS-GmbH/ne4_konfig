@@ -26,7 +26,7 @@ async fn read_all_registers() -> Result<Vec<u16>, futures::io::Error> {
     let mut ctx = rtu::connect_slave(port, CLIENT_ID.into()).await?;
 
     for (i, reg) in registers.iter_mut().enumerate() {
-        let value = ctx.read_holding_registers(i as u16, 1).await?;
+        let value = ctx.read_input_registers(i as u16, 1).await?;
         *reg = value[0];
     }
     Ok(registers)
