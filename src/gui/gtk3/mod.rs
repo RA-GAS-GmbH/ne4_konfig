@@ -1,6 +1,7 @@
 use crate::tokio_thread::{list_ports, TokioCommand, TokioResponse, TokioThread};
 use chrono::Utc;
 use gio::prelude::*;
+use glib::clone;
 use glib::{signal_handler_block, signal_handler_unblock};
 use gtk::prelude::*;
 use gtk::Application;
@@ -92,7 +93,7 @@ fn ui_init(app: &gtk::Application) {
         combo_box_text_ports.set_sensitive(false);
     }
     // Modbus Adresse
-    let entry_modbus_address = build!(builder, "entry_modbus_address");
+    let entry_modbus_address: gtk::Entry = build!(builder, "entry_modbus_address");
     // Reset Button
     let button_reset: gtk::Button = build!(builder, "button_reset");
     // Labels Sensor Werte
@@ -127,59 +128,40 @@ fn ui_init(app: &gtk::Application) {
         .expect("Failed to load CSS stylesheet");
 
     // Callbacks
-    // let tokio_thread2 = tokio_thread.clone();
-    let combo_box_text_ports_changed_signal = combo_box_text_ports.connect_changed(move |s| {
-        if let Some(port_name) = s.get_active_text() {
-            // match tokio_thread.send_port_change_port_cmd(port_name.to_string()) {
-            //     _ => {}
-            // }
-            //     ui_event_sender_clone
-            //         .clone()
-            //         .try_send(TokioCommand::ChangePort("".into()))
-            //         .expect("Send UI event");
-        }
-    });
+    let combo_box_text_ports_changed_signal = combo_box_text_ports.connect_changed(move |s| {});
 
-    let toggle_button_connect_toggle_signal = toggle_button_connect.connect_clicked(move |s| {
-        if s.get_active() {
-            GLOBAL.with(|global| {
-                if let Some(ref ui) = *global.borrow() {
-                    ui.combo_box_text_ports.set_sensitive(false);
-                    ui.entry_modbus_address.set_sensitive(false);
-                    ui.button_reset.set_sensitive(false);
-                    ui.label_sensor_type_value
-                        .set_text("RA-GAS GmbH - NE4-MOD-BUS");
-                    ui.label_sensor_working_mode_value.set_text("10 CO 1000ppm");
-                }
-            });
-        } else {
-            GLOBAL.with(|global| {
-                if let Some(ref ui) = *global.borrow() {
-                    ui.combo_box_text_ports.set_sensitive(true);
-                    ui.entry_modbus_address.set_sensitive(true);
-                    ui.button_reset.set_sensitive(true);
-                    ui.label_sensor_type_value.set_text("");
-                    ui.label_sensor_working_mode_value.set_text("");
-                }
-            });
-        }
-    });
+    let toggle_button_connect_toggle_signal =
+        toggle_button_connect.connect_clicked(clone!(@strong combo_box_text_ports,
+                @strong entry_modbus_address,
+                @strong button_reset,
+                @strong label_sensor_type_value,
+                @strong label_sensor_working_mode_value => move |s| {
+            if s.get_active() {
+                combo_box_text_ports.set_sensitive(false);
+                entry_modbus_address.set_sensitive(false);
+                button_reset.set_sensitive(false);
+                label_sensor_type_value.set_text("RA-GAS GmbH - NE4-MOD-BUS");
+                label_sensor_working_mode_value.set_text("10 CO 1000ppm");
+            } else {
+                combo_box_text_ports.set_sensitive(true);
+                entry_modbus_address.set_sensitive(true);
+                button_reset.set_sensitive(true);
+                label_sensor_type_value.set_text("");
+                label_sensor_working_mode_value.set_text("");
+            }
+        }));
 
-    let ui_event_sender_clone = ui_event_sender.clone();
-    button_nullpunkt.connect_clicked(move |_| {
-        ui_event_sender_clone
+    button_nullpunkt.connect_clicked(clone!(@strong ui_event_sender => move |_| {
+        ui_event_sender
             .clone()
             .try_send(TokioCommand::Connect)
             .expect("send UI event from Nullpunkt button");
-    });
+    }));
 
-    button_reset.connect_clicked(move |_| {
-        GLOBAL.with(|global| {
-            if let Some(ref ui) = *global.borrow() {
-                ui.entry_modbus_address.set_text("247");
-            }
-        });
-    });
+    button_reset.connect_clicked(clone!(@strong entry_modbus_address => move |_| {
+
+        entry_modbus_address.set_text("247");
+    }));
 
     let mut ui = Ui {
         button_reset,
@@ -209,7 +191,7 @@ fn ui_init(app: &gtk::Application) {
             use futures::stream::StreamExt;
 
             while let Some(event) = data_event_receiver.next().await {
-                println!("Got some data_event: {:?}", event);
+                info!("Got some data_event: {:?}", event);
                 match event {
                     TokioResponse::Connect(thing) => {
                         info!("Connect!: {:?}", &thing);

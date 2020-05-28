@@ -81,7 +81,7 @@ impl TokioThread {
                 });
 
                 while let Some(event) = ui_event_receiver.next().await {
-                    println!("Got event: {:?}", event);
+                    info!("Got event: {:?}", event);
                     match event {
                         TokioCommand::Connect => data_event_sender
                             .send(TokioResponse::Connect(connect().await))
