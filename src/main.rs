@@ -1,14 +1,8 @@
-#[macro_use]
-extern crate log;
-
-mod gui {
-    pub mod gtk3;
-}
-
-mod serial_thread;
+#![windows_subsystem = "windows"]
+use ne4_konfig;
 
 fn main() {
     env_logger::init();
 
-    gui::gtk3::launch();
+    ne4_konfig::gui::gtk3::launch();
 }

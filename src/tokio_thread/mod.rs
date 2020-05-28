@@ -1,0 +1,202 @@
+use futures::channel::mpsc::*;
+use futures::future::TryFutureExt;
+use futures::sink::SinkExt;
+use futures::stream::StreamExt;
+use std::thread;
+use std::{cell::RefCell, future::Future, io::Error, pin::Pin, rc::Rc};
+use tokio::runtime::Runtime;
+use tokio::time::*;
+use tokio_modbus::client::{
+    rtu,
+    util::{reconnect_shared_context, NewContext, SharedContext},
+    Context,
+};
+use tokio_modbus::prelude::*;
+use tokio_serial::{Serial, SerialPortSettings};
+
+#[derive(Debug)]
+struct SerialConfig {
+    path: String,
+    settings: SerialPortSettings,
+}
+
+impl NewContext for SerialConfig {
+    fn new_context(&self) -> Pin<Box<dyn Future<Output = Result<Context, Error>>>> {
+        let serial = Serial::from_path(&self.path, &self.settings);
+        Box::pin(async {
+            let port = serial?;
+            rtu::connect(port).await
+        })
+    }
+}
+
+#[derive(Debug)]
+pub enum TokioCommand {
+    Connect,
+    ChangePort(String),
+    GeneralError,
+    Nullgas,
+    Messgas,
+    UpdateSensor(Option<String>, u8),
+}
+
+#[derive(Debug)]
+pub enum TokioResponse {
+    Connect(()),
+    /// A sorted list of ports found during a port scan. Guaranteed to contain the currently-active
+    /// port if there is one.
+    PortsFound(Vec<String>),
+    Timeout,
+    /// A port error has occurred that is likely the result of a serial device disconnected. This
+    /// also returns a list of all still-attached serial devices.
+    UnexpectedDisconnection(Vec<String>),
+    UpdateSensorValues(Result<Vec<u16>, Error>),
+}
+
+#[derive(Debug)]
+pub enum GeneralError {
+    Send(TokioCommand),
+}
+
+pub struct TokioThread {
+    pub data_event_receiver: Receiver<TokioResponse>,
+    pub ui_event_sender: Sender<TokioCommand>,
+}
+
+impl TokioThread {
+    pub fn new() -> Self {
+        let (ui_event_sender, mut ui_event_receiver) = futures::channel::mpsc::channel(0);
+        let (mut data_event_sender, data_event_receiver) = futures::channel::mpsc::channel(0);
+
+        let serial_config = SerialConfig {
+            path: "".into(),
+            settings: SerialPortSettings {
+                baud_rate: 9600,
+                ..Default::default()
+            },
+        };
+
+        let shared_context = Rc::new(RefCell::new(SharedContext::new(
+            None, // no initial context, i.e. not connected
+            Box::new(serial_config),
+        )));
+
+        thread::spawn(move || {
+            let port: Option<Box<dyn tokio_serial::SerialPort>> = None;
+            let settings: SerialPortSettings = Default::default();
+
+            let mut rt = Runtime::new().expect("create tokio runtime");
+            rt.block_on(async {
+                // Scan for ports
+                let mut data_event_sender2 = data_event_sender.clone();
+                tokio::spawn(async move {
+                    let mut port: Option<Box<dyn tokio_serial::SerialPort>> = None;
+                    let mut interval = interval(Duration::from_millis(1000));
+                    loop {
+                        interval.tick().await;
+
+                        let ports = port_scan().await;
+
+                        data_event_sender2
+                            .send(TokioResponse::PortsFound(ports))
+                            .await
+                            .expect("data_event_sender send message");
+                    }
+                });
+
+                while let Some(event) = ui_event_receiver.next().await {
+                    info!("Got event: {:?}", event);
+                    match event {
+                        TokioCommand::Connect => data_event_sender
+                            .send(TokioResponse::Connect(connect().await))
+                            .await
+                            .expect("send connect event"),
+                        TokioCommand::ChangePort(name) => {
+                            if port.is_some() {
+                                info!("Change port to '{}' using settings {:?}", &name, &settings);
+                            }
+                        }
+                        TokioCommand::Nullgas => {}
+                        TokioCommand::Messgas => {}
+                        TokioCommand::GeneralError => {}
+                        TokioCommand::UpdateSensor(port, modbus_address) => {
+                            // match modbus_address {}
+                            match timeout(
+                                Duration::from_millis(4000),
+                                update_sensor(port.unwrap(), modbus_address),
+                            )
+                            .await
+                            {
+                                Ok(values) => data_event_sender
+                                    .send(TokioResponse::UpdateSensorValues(values))
+                                    .await
+                                    .expect("update sensor"),
+                                Err(e) => data_event_sender
+                                    .send(TokioResponse::Timeout)
+                                    .await
+                                    .expect("update sensor"),
+                            }
+                        }
+                    }
+                }
+            })
+        });
+
+        TokioThread {
+            data_event_receiver,
+            ui_event_sender,
+        }
+    }
+
+    pub fn send_port_change_port_cmd(
+        &self,
+        port_name: String,
+    ) -> std::result::Result<(), GeneralError> {
+        let mut tx = self.ui_event_sender.clone();
+        tx.send(TokioCommand::ChangePort(port_name))
+            .map_err(|e| GeneralError::Send(TokioCommand::GeneralError));
+        Ok(())
+    }
+}
+
+pub(crate) fn list_ports() -> tokio_serial::Result<Vec<String>> {
+    match tokio_serial::available_ports() {
+        Ok(ports) => Ok(ports.into_iter().map(|x| x.port_name).collect()),
+        Err(e) => Err(e),
+    }
+}
+
+async fn port_scan() -> Vec<String> {
+    let mut ports = list_ports().expect("Scanning for ports should never fail");
+    ports.sort();
+    ports.reverse();
+    debug!("Found ports: {:?}", &ports);
+
+    ports
+}
+
+async fn connect() -> () {
+    println!("Function connect()");
+
+    ()
+}
+
+async fn update_sensor(port: String, modbus_address: u8) -> Result<Vec<u16>, Error> {
+    let mut registers = vec![0u16; 49];
+
+    let port = Serial::from_path(
+        port,
+        &SerialPortSettings {
+            baud_rate: 9600,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    let mut ctx = rtu::connect_slave(port, modbus_address.into()).await?;
+
+    for (i, reg) in registers.iter_mut().enumerate() {
+        let value = ctx.read_input_registers(i as u16, 1).await?;
+        *reg = value[0];
+    }
+    Ok(registers)
+}
