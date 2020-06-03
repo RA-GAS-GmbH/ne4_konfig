@@ -659,6 +659,7 @@ dependencies = [
  "glib",
  "gtk",
  "log",
+ "mio-serial",
  "serde",
  "tokio",
  "tokio-modbus",
