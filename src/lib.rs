@@ -9,5 +9,4 @@ pub mod sensors {
     pub mod ne4;
 }
 
-mod serial_thread;
 mod tokio_thread;

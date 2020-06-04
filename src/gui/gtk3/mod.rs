@@ -1,45 +1,51 @@
-use crate::tokio_thread::{list_ports, TokioCommand, TokioResponse, TokioThread};
 use chrono::Utc;
-use gio::prelude::*;
-use glib::clone;
 use glib::{signal_handler_block, signal_handler_unblock};
 use gtk::prelude::*;
 use gtk::Application;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
+use crate::tokio_thread::*;
+use gio::prelude::*;
+use glib::clone;
+use gtk::prelude::*;
+
 #[macro_use]
 pub mod macros;
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
-enum StatusContext {
-    PortOperation,
-}
-
 pub struct Ui {
-    button_reset: gtk::Button,
-    button_nullpunkt: gtk::Button,
+    application_window: gtk::ApplicationWindow,
     button_messgas: gtk::Button,
+    button_nullpunkt: gtk::Button,
+    button_reset: gtk::Button,
     combo_box_text_ports_changed_signal: glib::SignalHandlerId,
     combo_box_text_ports_map: HashMap<String, u32>,
     combo_box_text_ports: gtk::ComboBoxText,
     combo_box_text_sensor_working_mode_map: HashMap<String, u16>,
     combo_box_text_sensor_working_mode: gtk::ComboBoxText,
     entry_modbus_address: gtk::Entry,
-    label_sensor_type_value: gtk::Label,
     label_sensor_type_value_value: gtk::Label,
+    label_sensor_type_value: gtk::Label,
     list_store_sensor: gtk::ListStore,
     statusbar_application: gtk::Statusbar,
     statusbar_contexts: HashMap<StatusContext, u32>,
     toggle_button_connect_toggle_signal: glib::SignalHandlerId,
     toggle_button_connect: gtk::ToggleButton,
-    application_window: gtk::ApplicationWindow,
 }
 
-// Thread local storage
-thread_local!(
-    pub static GLOBAL: RefCell<Option<Ui>> = RefCell::new(None)
-);
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+enum StatusContext {
+    PortOperation,
+}
+
+#[derive(Debug)]
+pub enum UiCommand {
+    PortsFound(Vec<String>),
+    Timeout,
+    UpdateSensorType(String),
+    UpdateSensorValue(u16),
+    UpdateSensorValues(Result<Vec<u16>, mio_serial::Error>),
+}
 
 pub fn launch() {
     let application = Application::new(
@@ -56,11 +62,13 @@ pub fn launch() {
 }
 
 fn ui_init(app: &gtk::Application) {
-    // Create/ start tokio thread
-    let tokio_thread = TokioThread::new();
-    let mut ui_event_sender = tokio_thread.ui_event_sender;
-    let data_event_receiver = tokio_thread.data_event_receiver;
+    // Create and start the tokio thread
+    // communication erfolgt via the tokio_thread_sender
+    let (ui_event_sender, mut ui_event_receiver) = futures::channel::mpsc::channel(0);
+    let tokio_thread = TokioThread::new(ui_event_sender);
+    let tokio_thread_sender = tokio_thread.tokio_thread_sender;
 
+    // Now build the UI
     let glade_str = include_str!("main.ui");
     let builder = gtk::Builder::new_from_string(glade_str);
     let application_window: gtk::ApplicationWindow = build!(builder, "application_window");
@@ -163,7 +171,7 @@ fn ui_init(app: &gtk::Application) {
             @strong entry_modbus_address,
             @strong label_sensor_type_value,
         @strong combo_box_text_ports,
-        @strong ui_event_sender
+        @strong tokio_thread_sender
             => move |s| {
         if s.get_active() {
             combo_box_text_ports.set_sensitive(false);
@@ -182,7 +190,7 @@ fn ui_init(app: &gtk::Application) {
             }
             // get modbus_address
             let modbus_address = entry_modbus_address.get_text().unwrap_or("0".into());
-            ui_event_sender
+            tokio_thread_sender
                 .clone()
                 .try_send(TokioCommand::UpdateSensor(port, modbus_address.parse().unwrap()))
                 .expect("send UI event from Nullpunkt button");
@@ -195,68 +203,84 @@ fn ui_init(app: &gtk::Application) {
         }
     }));
 
-    button_nullpunkt.connect_clicked(clone!(@strong ui_event_sender => move |_| {
-        ui_event_sender
-            .clone()
-            .try_send(TokioCommand::Nullgas)
-            .expect("send UI event from Nullpunkt button");
+    button_nullpunkt.connect_clicked(clone!(
+        @strong tokio_thread_sender => move |_| {
+            tokio_thread_sender
+                .clone()
+                .try_send(TokioCommand::Nullpunkt)
+                .expect("Faild to send tokio command");
+
+                tokio_thread_sender
+                .clone()
+                .try_send(TokioCommand::Connect)
+                .expect("Faild to send tokio command");
+
+                tokio_thread_sender
+                .clone()
+                .try_send(TokioCommand::ReadRegistersLoop)
+                .expect("Faild to send tokio command");
     }));
 
     button_messgas.connect_clicked(clone!(
-        @strong combo_box_text_ports_map,
-        @strong combo_box_text_ports,
-        @strong entry_modbus_address,
-        @strong ui_event_sender => move |_| {
+        @strong tokio_thread_sender => move |_| {
+            tokio_thread_sender
+                .clone()
+                .try_send(TokioCommand::Messgas)
+                .expect("Faild to send tokio command");
 
+            tokio_thread_sender
+                .clone()
+                .try_send(TokioCommand::Disconnect)
+                .expect("Faild to send tokio command");
     }));
 
     button_reset.connect_clicked(clone!(@strong entry_modbus_address => move |_| {
         entry_modbus_address.set_text("247");
     }));
 
-    /// Diese Struct wird im Tokio Thread verwendet.
-    /// Zugriff auf die Elemente der UI
+    // Zugriff auf die Elemente der UI
     let mut ui = Ui {
-        button_reset,
-        button_nullpunkt,
+        application_window: application_window.clone(),
         button_messgas,
+        button_nullpunkt,
+        button_reset,
         combo_box_text_ports_changed_signal,
         combo_box_text_ports_map,
         combo_box_text_ports,
         combo_box_text_sensor_working_mode_map,
         combo_box_text_sensor_working_mode,
         entry_modbus_address,
-        label_sensor_type_value,
         label_sensor_type_value_value,
+        label_sensor_type_value,
         list_store_sensor,
         statusbar_application,
         statusbar_contexts: context_map,
         toggle_button_connect_toggle_signal,
         toggle_button_connect,
-        application_window: application_window.clone(),
     };
 
     application_window.show_all();
 
     // future on main thread has access to UI
     let future = {
-        let _button_nullpunkt = &ui.button_nullpunkt.clone();
-        let mut data_event_receiver = data_event_receiver;
-        async move {
-            use futures::stream::StreamExt;
+        use futures::stream::StreamExt;
 
-            while let Some(event) = data_event_receiver.next().await {
-                info!("Got some data_event: {:?}", event);
+        async move {
+            while let Some(event) = ui_event_receiver.next().await {
                 match event {
-                    TokioResponse::Connect(thing) => {
-                        info!("Connect!: {:?}", &thing);
+                    UiCommand::UpdateSensorType(text) => {
                         log_status(
                             &ui,
                             StatusContext::PortOperation,
-                            &format!("Connect!: {:?}", &thing),
+                            &format!("Connect!: {:?}", &text),
                         );
+                        &ui.label_sensor_type_value.set_text(&text);
                     }
-                    TokioResponse::PortsFound(ports) => {
+                    UiCommand::Timeout => {
+                        info!("Timeout!");
+                        log_status(&ui, StatusContext::PortOperation, &format!("Timeout!"));
+                    }
+                    UiCommand::PortsFound(ports) => {
                         info!("Found some ports!");
                         // Determine if the new found port match existing ones
                         let replace = {
@@ -317,13 +341,11 @@ fn ui_init(app: &gtk::Application) {
                             );
                         }
                     }
-                    TokioResponse::Timeout => {
-                        info!("Timeout!");
-                        log_status(&ui, StatusContext::PortOperation, &format!("Timeout!"));
+                    UiCommand::UpdateSensorValue(value) => {
+                        let value = format!("{}", value);
+                        &ui.label_sensor_type_value_value.set_text(&value);
                     }
-                    TokioResponse::UnexpectedDisconnection(_) => unimplemented!(),
-                    // Catch all for unimplemented events
-                    TokioResponse::UpdateSensorValues(values) => {
+                    UiCommand::UpdateSensorValues(values) => {
                         let values = values.unwrap();
                         info!("Update Sensor: {:?}", values[0]);
                         &ui.combo_box_text_sensor_working_mode.set_active(Some(0));
