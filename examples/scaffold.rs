@@ -1,17 +1,28 @@
 // Tokio Thread
+
 mod tokio_thread {
     use crate::gui::gtk3::UiCommand;
     use futures::channel::mpsc::*;
     use futures::prelude::*;
     use tokio::prelude::*;
+    use tokio::time::*;
 
     #[derive(Debug)]
     pub enum TokioCommand {
         Nullpunkt,
         Messgas,
+        ReadRegistersLoop,
+        Connect,
+        Disconnect,
     }
     #[derive(Debug)]
     pub enum TokioResponse {}
+
+    #[derive(Debug, PartialEq)]
+    enum TokioState {
+        Connected,
+        Disconnected,
+    }
 
     pub struct TokioThread {
         pub tokio_thread_sender: Sender<TokioCommand>,
@@ -24,10 +35,24 @@ mod tokio_thread {
 
             std::thread::spawn(move || {
                 let mut rt = tokio::runtime::Runtime::new().expect("create tokio runtime");
+                let state = std::sync::Arc::new(tokio::sync::Mutex::new(TokioState::Disconnected));
                 rt.block_on(async {
                     while let Some(event) = tokio_thread_receiver.next().await {
                         debug!("Tokio Thread got event: TokioCommand::{:?}", event);
                         match event {
+                            TokioCommand::ReadRegistersLoop => {
+                                read_registers(state.clone(), ui_event_sender.clone())
+                                    .await
+                                    .expect("Could not start read registers loop")
+                            }
+                            TokioCommand::Connect => {
+                                let mut state = state.lock().await;
+                                *state = TokioState::Connected;
+                            }
+                            TokioCommand::Disconnect => {
+                                let mut state = state.lock().await;
+                                *state = TokioState::Disconnected;
+                            }
                             TokioCommand::Nullpunkt => ui_event_sender
                                 .clone()
                                 .send(UiCommand::UpdateSensorType("Nullpunkt".into()))
@@ -47,6 +72,32 @@ mod tokio_thread {
                 tokio_thread_sender,
             }
         }
+    }
+
+    async fn read_registers(
+        state: std::sync::Arc<tokio::sync::Mutex<TokioState>>,
+        ui_event_sender: Sender<UiCommand>,
+    ) -> tokio::io::Result<()> {
+        tokio::task::spawn(async move {
+            let mut i = 0u32;
+            // println!("State: {:?}", state.clone().lock().await);
+
+            loop {
+                let state = state.lock().await;
+                if *state == TokioState::Disconnected {
+                    break;
+                }
+
+                i += 1;
+                ui_event_sender
+                    .clone()
+                    .send(UiCommand::UpdateSensorValue(i))
+                    .await
+                    .expect("Failed to send Ui command");
+                delay_for(Duration::from_millis(100)).await;
+            }
+        });
+        Ok(())
     }
 }
 
@@ -73,6 +124,7 @@ mod gui {
         #[derive(Debug)]
         pub enum UiCommand {
             UpdateSensorType(String),
+            UpdateSensorValue(u32),
         }
         #[derive(Debug)]
         pub enum UiResponse {}
@@ -93,6 +145,8 @@ mod gui {
             let button_nullpunkt: gtk::Button = build!(builder, "button_nullpunkt");
             let button_messgas: gtk::Button = build!(builder, "button_messgas");
             let label_sensor_type_value: gtk::Label = build!(builder, "label_sensor_type_value");
+            let label_sensor_type_value_value: gtk::Label =
+                build!(builder, "label_sensor_type_value_value");
 
             application_window.set_application(Some(application));
 
@@ -102,6 +156,16 @@ mod gui {
                         .clone()
                         .try_send(TokioCommand::Nullpunkt)
                         .expect("Faild to send tokio command");
+
+                        tokio_thread_sender
+                        .clone()
+                        .try_send(TokioCommand::Connect)
+                        .expect("Faild to send tokio command");
+
+                        tokio_thread_sender
+                        .clone()
+                        .try_send(TokioCommand::ReadRegistersLoop)
+                        .expect("Faild to send tokio command");
             }));
 
             button_messgas.connect_clicked(clone!(
@@ -109,6 +173,11 @@ mod gui {
                     tokio_thread_sender
                         .clone()
                         .try_send(TokioCommand::Messgas)
+                        .expect("Faild to send tokio command");
+
+                    tokio_thread_sender
+                        .clone()
+                        .try_send(TokioCommand::Disconnect)
                         .expect("Faild to send tokio command");
             }));
 
@@ -123,6 +192,9 @@ mod gui {
                         match event {
                             UiCommand::UpdateSensorType(text) => {
                                 label_sensor_type_value.set_text(&text)
+                            }
+                            UiCommand::UpdateSensorValue(value) => {
+                                label_sensor_type_value_value.set_text(&value.to_string())
                             }
                         }
                     }
