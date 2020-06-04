@@ -1,35 +1,32 @@
+use crate::tokio_thread::*;
 use chrono::Utc;
+use gio::prelude::*;
+use glib::clone;
 use glib::{signal_handler_block, signal_handler_unblock};
 use gtk::prelude::*;
 use gtk::Application;
-use std::cell::RefCell;
 use std::collections::HashMap;
-
-use crate::tokio_thread::*;
-use gio::prelude::*;
-use glib::clone;
-use gtk::prelude::*;
 
 #[macro_use]
 pub mod macros;
 
 pub struct Ui {
-    application_window: gtk::ApplicationWindow,
-    button_messgas: gtk::Button,
-    button_nullpunkt: gtk::Button,
-    button_reset: gtk::Button,
+    // application_window: gtk::ApplicationWindow,
+    // button_messgas: gtk::Button,
+    // button_nullpunkt: gtk::Button,
+    // button_reset: gtk::Button,
     combo_box_text_ports_changed_signal: glib::SignalHandlerId,
     combo_box_text_ports_map: HashMap<String, u32>,
     combo_box_text_ports: gtk::ComboBoxText,
-    combo_box_text_sensor_working_mode_map: HashMap<String, u16>,
+    // combo_box_text_sensor_working_mode_map: HashMap<String, u16>,
     combo_box_text_sensor_working_mode: gtk::ComboBoxText,
-    entry_modbus_address: gtk::Entry,
+    // entry_modbus_address: gtk::Entry,
     label_sensor_type_value_value: gtk::Label,
     label_sensor_type_value: gtk::Label,
-    list_store_sensor: gtk::ListStore,
+    // list_store_sensor: gtk::ListStore,
     statusbar_application: gtk::Statusbar,
     statusbar_contexts: HashMap<StatusContext, u32>,
-    toggle_button_connect_toggle_signal: glib::SignalHandlerId,
+    // toggle_button_connect_toggle_signal: glib::SignalHandlerId,
     toggle_button_connect: gtk::ToggleButton,
 }
 
@@ -122,7 +119,7 @@ fn ui_init(app: &gtk::Application) {
     .iter()
     .cloned()
     .collect();
-    for (name, id) in combo_box_text_sensor_working_mode_map.clone() {
+    for (name, id) in combo_box_text_sensor_working_mode_map {
         combo_box_text_sensor_working_mode.append(Some(&id.to_string()), &name);
     }
     // Modbus Adresse
@@ -135,7 +132,7 @@ fn ui_init(app: &gtk::Application) {
     let button_messgas: gtk::Button = build!(builder, "button_messgas");
 
     // ListStore Sensor Values
-    let list_store_sensor: gtk::ListStore = build!(builder, "list_store_sensor");
+    let _list_store_sensor: gtk::ListStore = build!(builder, "list_store_sensor");
 
     // Connect button, disabled if no ports available
     let toggle_button_connect: gtk::ToggleButton = build!(builder, "toggle_button_connect");
@@ -162,9 +159,9 @@ fn ui_init(app: &gtk::Application) {
         .expect("Failed to load CSS stylesheet");
 
     // Callbacks
-    let combo_box_text_ports_changed_signal = combo_box_text_ports.connect_changed(move |s| {});
+    let combo_box_text_ports_changed_signal = combo_box_text_ports.connect_changed(move |_| {});
 
-    let toggle_button_connect_toggle_signal = toggle_button_connect.connect_clicked(clone!(
+    let _toggle_button_connect_toggle_signal = toggle_button_connect.connect_clicked(clone!(
             @strong button_reset,
             @strong combo_box_text_ports_map,
             @strong combo_box_text_sensor_working_mode,
@@ -240,22 +237,22 @@ fn ui_init(app: &gtk::Application) {
 
     // Zugriff auf die Elemente der UI
     let mut ui = Ui {
-        application_window: application_window.clone(),
-        button_messgas,
-        button_nullpunkt,
-        button_reset,
+        // application_window: application_window.clone(),
+        // button_messgas,
+        // button_nullpunkt,
+        // button_reset,
         combo_box_text_ports_changed_signal,
         combo_box_text_ports_map,
         combo_box_text_ports,
-        combo_box_text_sensor_working_mode_map,
+        // combo_box_text_sensor_working_mode_map,
         combo_box_text_sensor_working_mode,
-        entry_modbus_address,
+        // entry_modbus_address,
         label_sensor_type_value_value,
         label_sensor_type_value,
-        list_store_sensor,
+        // list_store_sensor,
         statusbar_application,
         statusbar_contexts: context_map,
-        toggle_button_connect_toggle_signal,
+        // toggle_button_connect_toggle_signal,
         toggle_button_connect,
     };
 

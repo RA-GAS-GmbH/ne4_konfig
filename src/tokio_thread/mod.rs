@@ -51,7 +51,7 @@ impl TokioThread {
                                     .send(UiCommand::UpdateSensorValues(values))
                                     .await
                                     .expect("update sensor"),
-                                Err(e) => ui_event_sender
+                                Err(_) => ui_event_sender
                                     .clone()
                                     .send(UiCommand::Timeout)
                                     .await
@@ -112,7 +112,6 @@ async fn read_registers(
                 break;
             }
             use tokio_modbus::prelude::*;
-            use tokio_serial::{Serial, SerialPortSettings};
 
             let tty_path = "/dev/ttyUSB0";
             let slave = Slave(0x1);
@@ -135,7 +134,7 @@ async fn read_registers(
     Ok(())
 }
 
-async fn port_scan() -> Vec<String> {
+fn _port_scan() -> Vec<String> {
     let mut ports = list_ports().expect("Scanning for ports should never fail");
     ports.sort();
     ports.reverse();
@@ -144,14 +143,8 @@ async fn port_scan() -> Vec<String> {
     ports
 }
 
-async fn connect() -> () {
-    println!("Function connect()");
-
-    ()
-}
-
-async fn update_sensor(port: String, modbus_address: u8) -> Result<Vec<u16>> {
-    let mut registers = vec![0u16; 49];
+async fn update_sensor(_port: String, _modbus_address: u8) -> Result<Vec<u16>> {
+    let registers = vec![0u16; 49];
     //
     // let port = Serial::from_path(
     //     port,
