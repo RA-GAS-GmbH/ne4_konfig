@@ -1,10 +1,8 @@
 // Tokio Thread
-
 mod tokio_thread {
     use crate::gui::gtk3::UiCommand;
     use futures::channel::mpsc::*;
     use futures::prelude::*;
-    use tokio::prelude::*;
     use tokio::time::*;
 
     #[derive(Debug)]
@@ -15,8 +13,6 @@ mod tokio_thread {
         Connect,
         Disconnect,
     }
-    #[derive(Debug)]
-    pub enum TokioResponse {}
 
     #[derive(Debug, PartialEq)]
     enum TokioState {
@@ -34,14 +30,17 @@ mod tokio_thread {
                 futures::channel::mpsc::channel(0);
 
             std::thread::spawn(move || {
+                // Tokio Thread
                 let mut rt = tokio::runtime::Runtime::new().expect("create tokio runtime");
+                // Shared State
                 let state = std::sync::Arc::new(tokio::sync::Mutex::new(TokioState::Disconnected));
+
                 rt.block_on(async {
                     while let Some(event) = tokio_thread_receiver.next().await {
                         debug!("Tokio Thread got event: TokioCommand::{:?}", event);
                         match event {
                             TokioCommand::ReadRegistersLoop => {
-                                read_registers(state.clone(), ui_event_sender.clone())
+                                read_registers(ui_event_sender.clone(), state.clone())
                                     .await
                                     .expect("Could not start read registers loop")
                             }
@@ -75,23 +74,33 @@ mod tokio_thread {
     }
 
     async fn read_registers(
-        state: std::sync::Arc<tokio::sync::Mutex<TokioState>>,
         ui_event_sender: Sender<UiCommand>,
+        state: std::sync::Arc<tokio::sync::Mutex<TokioState>>,
     ) -> tokio::io::Result<()> {
-        tokio::task::spawn(async move {
-            let mut i = 0u32;
-            // println!("State: {:?}", state.clone().lock().await);
+        // TODO: Check if thread was alreaddy started
 
+        tokio::task::spawn(async move {
             loop {
                 let state = state.lock().await;
                 if *state == TokioState::Disconnected {
                     break;
                 }
+                use tokio_modbus::prelude::*;
+                use tokio_serial::{Serial, SerialPortSettings};
 
-                i += 1;
+                let tty_path = "/dev/ttyUSB0";
+                let slave = Slave(0x1);
+
+                let mut settings = SerialPortSettings::default();
+                settings.baud_rate = 9600;
+                let port = Serial::from_path(tty_path, &settings).unwrap();
+
+                let mut ctx = rtu::connect_slave(port, slave).await.unwrap();
+                let rsp = ctx.read_input_registers(0x2, 1).await.unwrap();
+
                 ui_event_sender
                     .clone()
-                    .send(UiCommand::UpdateSensorValue(i))
+                    .send(UiCommand::UpdateSensorValue(rsp[0]))
                     .await
                     .expect("Failed to send Ui command");
                 delay_for(Duration::from_millis(100)).await;
@@ -124,10 +133,8 @@ mod gui {
         #[derive(Debug)]
         pub enum UiCommand {
             UpdateSensorType(String),
-            UpdateSensorValue(u32),
+            UpdateSensorValue(u16),
         }
-        #[derive(Debug)]
-        pub enum UiResponse {}
 
         // Build the main gtk thread
         fn build_ui(application: &gtk::Application) {
@@ -194,7 +201,8 @@ mod gui {
                                 label_sensor_type_value.set_text(&text)
                             }
                             UiCommand::UpdateSensorValue(value) => {
-                                label_sensor_type_value_value.set_text(&value.to_string())
+                                let value = format!("{}", value);
+                                label_sensor_type_value_value.set_text(&value)
                             }
                         }
                     }
@@ -220,6 +228,51 @@ mod gui {
         }
     }
 }
+
+// Modbus Client functions
+pub mod modbus_client {
+    use std::{cell::RefCell, future::Future, io::Error, pin::Pin, rc::Rc};
+    use tokio_modbus::client::{
+        rtu,
+        util::{NewContext, SharedContext},
+        Context,
+    };
+    use tokio_serial::{Serial, SerialPortSettings};
+
+    pub struct ModbusClient {
+        path: String,
+        settings: SerialPortSettings,
+    }
+    impl ModbusClient {
+        pub fn new() -> Self {
+            ModbusClient {
+                path: "/dev/ttyUSB0".into(),
+                settings: SerialPortSettings {
+                    baud_rate: 9600,
+                    ..Default::default()
+                },
+            }
+        }
+
+        pub fn ctx(self) -> Rc<RefCell<SharedContext>> {
+            Rc::new(RefCell::new(SharedContext::new(
+                None, // no initial context, i.e. not connected
+                Box::new(self),
+            )))
+        }
+    }
+
+    impl NewContext for ModbusClient {
+        fn new_context(&self) -> Pin<Box<dyn Future<Output = Result<Context, Error>>>> {
+            let serial = Serial::from_path(&self.path, &self.settings);
+            Box::pin(async {
+                let port = serial?;
+                rtu::connect(port).await
+            })
+        }
+    }
+}
+
 #[macro_use]
 extern crate log;
 

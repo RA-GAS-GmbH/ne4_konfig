@@ -527,7 +527,7 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
                         <property name="halign">start</property>
                         <property name="valign">end</property>
                         <property name="margin_end">10</property>
-                        <property name="label" translatable="yes">000</property>
+                        <property name="label" translatable="yes">0</property>
                       </object>
                       <packing>
                         <property name="expand">True</property>

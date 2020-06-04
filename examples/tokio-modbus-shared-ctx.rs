@@ -1,54 +1,68 @@
-/// Tokio Modbus
-/// ## Shared Context (NewContext)
-/// A SharedContext have to been attachted to the SerialConfig via `impl NewContext for SerialConfig`
-use std::{cell::RefCell, future::Future, io::Error, pin::Pin, rc::Rc};
-use tokio_modbus::client::{
-    rtu,
-    util::{reconnect_shared_context, NewContext, SharedContext},
-    Context,
-};
-use tokio_modbus::prelude::*;
-use tokio_serial::{Serial, SerialPortSettings};
+/// 04-06-2020 12:29
+// This example shows the Modbus CLient Module
+// The Modbus Client holds the TokioModbus Shared Context and acts on the Modbus RTU
 
-struct SerialConfig {
-    path: String,
-    settings: SerialPortSettings,
-}
+pub mod modbus_client {
+    use std::{cell::RefCell, future::Future, io::Error, pin::Pin, rc::Rc};
+    use tokio_modbus::client::{
+        rtu,
+        util::{NewContext, SharedContext},
+        Context,
+    };
+    use tokio_serial::{Serial, SerialPortSettings};
 
-impl NewContext for SerialConfig {
-    fn new_context(&self) -> Pin<Box<dyn Future<Output = Result<Context, Error>>>> {
-        let serial = Serial::from_path(&self.path, &self.settings);
-        Box::pin(async {
-            let port = serial?;
-            rtu::connect(port).await
-        })
+    pub struct ModbusClient {
+        path: String,
+        settings: SerialPortSettings,
+    }
+    impl ModbusClient {
+        pub fn new() -> Self {
+            ModbusClient {
+                path: "/dev/ttyUSB0".into(),
+                settings: SerialPortSettings {
+                    baud_rate: 9600,
+                    ..Default::default()
+                },
+            }
+        }
+
+        pub fn ctx(self) -> Rc<RefCell<SharedContext>> {
+            Rc::new(RefCell::new(SharedContext::new(
+                None, // no initial context, i.e. not connected
+                Box::new(self),
+            )))
+        }
+    }
+
+    impl NewContext for ModbusClient {
+        fn new_context(&self) -> Pin<Box<dyn Future<Output = Result<Context, Error>>>> {
+            let serial = Serial::from_path(&self.path, &self.settings);
+            Box::pin(async {
+                let port = serial?;
+                rtu::connect(port).await
+            })
+        }
     }
 }
 
+use crate::modbus_client::*;
+use tokio_modbus::client::util::reconnect_shared_context;
+use tokio_modbus::prelude::*;
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let serial_config = SerialConfig {
-        path: "/dev/ttyUSB0".into(),
-        settings: SerialPortSettings {
-            baud_rate: 9600,
-            ..Default::default()
-        },
-    };
+    let modbus_client = ModbusClient::new();
+    let modbus_ctx = modbus_client.ctx();
 
-    let shared_context = Rc::new(RefCell::new(SharedContext::new(
-        None, // no initial context, i.e. not connected
-        Box::new(serial_config),
-    )));
+    reconnect_shared_context(&modbus_ctx).await?;
+    assert!(modbus_ctx.borrow().is_connected());
 
-    println!(
-        "Before reconnect_shared_context(): &shared_context.borrow().is_connected(): {}",
-        &shared_context.borrow().is_connected()
-    );
-    reconnect_shared_context(&shared_context).await?;
-    println!(
-        "After reconnect_shared_context(): &shared_context.borrow().is_connected(): {}",
-        &shared_context.borrow().is_connected()
-    );
+    let context = modbus_ctx.borrow().share_context().unwrap();
+    let mut context = context.borrow_mut();
+    context.set_slave(1.into());
+
+    let response = context.read_input_registers(0, 5).await?;
+    println!("response: {:?}", &response);
 
     Ok(())
 }
