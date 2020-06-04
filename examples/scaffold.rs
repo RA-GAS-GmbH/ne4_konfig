@@ -26,22 +26,18 @@ mod tokio_thread {
                 let mut rt = tokio::runtime::Runtime::new().expect("create tokio runtime");
                 rt.block_on(async {
                     while let Some(event) = tokio_thread_receiver.next().await {
+                        debug!("Tokio Thread got event: TokioCommand::{:?}", event);
                         match event {
-                            Nullpunkt => {
-                                println!("Nullpunkt");
-                                ui_event_sender
-                                    .clone()
-                                    .try_send(UiCommand::UpdateSensorType("Nullpunkt".into()))
-                                    .expect("Failed to send Ui command")
-                            }
-                            Messgas => {
-                                println!("Messgas");
-                                ui_event_sender
-                                    .clone()
-                                    .try_send(UiCommand::UpdateSensorType("Messgas".into()))
-                                    .expect("Failed to send Ui command")
-                            }
-                            _ => println!(">>{:?}<<", &event),
+                            TokioCommand::Nullpunkt => ui_event_sender
+                                .clone()
+                                .send(UiCommand::UpdateSensorType("Nullpunkt".into()))
+                                .await
+                                .expect("Failed to send Ui command"),
+                            TokioCommand::Messgas => ui_event_sender
+                                .clone()
+                                .send(UiCommand::UpdateSensorType("Messgas".into()))
+                                .await
+                                .expect("Failed to send Ui command"),
                         }
                     }
                 })
@@ -102,15 +98,14 @@ mod gui {
 
             button_nullpunkt.connect_clicked(clone!(
                 @strong tokio_thread_sender => move |_| {
-                tokio_thread_sender
-                    .clone()
-                    .try_send(TokioCommand::Nullpunkt)
-                    .expect("Faild to send tokio command");
+                    tokio_thread_sender
+                        .clone()
+                        .try_send(TokioCommand::Nullpunkt)
+                        .expect("Faild to send tokio command");
             }));
 
             button_messgas.connect_clicked(clone!(
                 @strong tokio_thread_sender => move |_| {
-                    println!("Messgas geklickt");
                     tokio_thread_sender
                         .clone()
                         .try_send(TokioCommand::Messgas)
