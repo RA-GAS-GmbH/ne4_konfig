@@ -2,6 +2,7 @@ use crate::gui::gtk3::UiCommand;
 use futures::channel::mpsc::*;
 use futures::prelude::*;
 use tokio::time::*;
+use tokio_modbus::prelude::*;
 use tokio_serial::*;
 
 #[derive(Debug)]
@@ -10,7 +11,6 @@ pub enum TokioCommand {
     Disconnect,
     Messgas,
     Nullpunkt,
-    ReadRegistersLoop,
     UpdateSensor(Option<String>, u8),
 }
 
@@ -39,48 +39,56 @@ impl TokioThread {
                     debug!("Tokio Thread got event: TokioCommand::{:?}", event);
                     match event {
                         TokioCommand::UpdateSensor(port, modbus_address) => {
-                            // match modbus_address {}
-                            match timeout(
-                                Duration::from_millis(4000),
-                                update_sensor(port.unwrap(), modbus_address),
+                            info!("Execute event TokioCommand::UpdateSensor");
+                            read_registers(
+                                port,
+                                modbus_address,
+                                ui_event_sender.clone(),
+                                state.clone(),
                             )
                             .await
-                            {
-                                Ok(values) => ui_event_sender
-                                    .clone()
-                                    .send(UiCommand::UpdateSensorValues(values))
-                                    .await
-                                    .expect("update sensor"),
-                                Err(_) => ui_event_sender
-                                    .clone()
-                                    .send(UiCommand::Timeout)
-                                    .await
-                                    .expect("update sensor"),
-                            }
-                        }
-                        TokioCommand::ReadRegistersLoop => {
-                            read_registers(ui_event_sender.clone(), state.clone())
-                                .await
-                                .expect("Could not start read registers loop")
+                            .expect("Could not start read registers loop");
                         }
                         TokioCommand::Connect => {
+                            info!("Execute event TokioCommand::Connect");
+                            // Adjust shared state
                             let mut state = state.lock().await;
                             *state = TokioState::Connected;
+
+                            ui_event_sender
+                                .clone()
+                                .send(UiCommand::DisableConnectUiElements)
+                                .await
+                                .expect("Failed to send Ui command");
                         }
                         TokioCommand::Disconnect => {
+                            info!("Execute event TokioCommand::Disconnect");
+                            // Adjust shared state
                             let mut state = state.lock().await;
                             *state = TokioState::Disconnected;
+
+                            ui_event_sender
+                                .clone()
+                                .send(UiCommand::EnableConnectUiElements)
+                                .await
+                                .expect("Failed to send Ui command");
                         }
-                        TokioCommand::Nullpunkt => ui_event_sender
-                            .clone()
-                            .send(UiCommand::UpdateSensorType("Nullpunkt".into()))
-                            .await
-                            .expect("Failed to send Ui command"),
-                        TokioCommand::Messgas => ui_event_sender
-                            .clone()
-                            .send(UiCommand::UpdateSensorType("Messgas".into()))
-                            .await
-                            .expect("Failed to send Ui command"),
+                        TokioCommand::Nullpunkt => {
+                            info!("Execute event TokioCommand::Nullpunkt");
+                            ui_event_sender
+                                .clone()
+                                .send(UiCommand::UpdateSensorType("Nullpunkt".into()))
+                                .await
+                                .expect("Failed to send Ui command")
+                        }
+                        TokioCommand::Messgas => {
+                            info!("Execute event TokioCommand::Messgas");
+                            ui_event_sender
+                                .clone()
+                                .send(UiCommand::UpdateSensorType("Messgas".into()))
+                                .await
+                                .expect("Failed to send Ui command")
+                        }
                     }
                 }
             })
@@ -100,6 +108,8 @@ pub(crate) fn list_ports() -> tokio_serial::Result<Vec<String>> {
 }
 
 async fn read_registers(
+    port: Option<String>,
+    modbus_address: u8,
     ui_event_sender: Sender<UiCommand>,
     state: std::sync::Arc<tokio::sync::Mutex<TokioState>>,
 ) -> tokio::io::Result<()> {
@@ -111,23 +121,62 @@ async fn read_registers(
             if *state == TokioState::Disconnected {
                 break;
             }
-            use tokio_modbus::prelude::*;
 
-            let tty_path = "/dev/ttyUSB0";
-            let slave = Slave(0x1);
-
+            let tty_path = port.clone().unwrap_or("".into());
+            let slave = Slave(modbus_address);
             let mut settings = SerialPortSettings::default();
             settings.baud_rate = 9600;
             let port = Serial::from_path(tty_path, &settings).unwrap();
+            let mut registers = vec![0u16; 49];
 
             let mut ctx = rtu::connect_slave(port, slave).await.unwrap();
-            let rsp = ctx.read_input_registers(0x2, 1).await.unwrap();
+            for (i, reg) in registers.iter_mut().enumerate() {
+                match tokio::time::timeout(
+                    Duration::from_millis(500),
+                    ctx.read_input_registers(i as u16, 1),
+                )
+                .await
+                {
+                    Ok(value) => match value {
+                        Ok(value) => *reg = value[0],
+                        Err(e) => {
+                            ui_event_sender
+                                .clone()
+                                .send(UiCommand::Error(format!(
+                                    "Error while read_register {}: {}",
+                                    i,
+                                    e.to_string()
+                                )))
+                                .await
+                                .expect("Failed to send Ui command");
+                        }
+                    },
+                    Err(e) => {
+                        ui_event_sender
+                            .clone()
+                            .send(UiCommand::Disconnect)
+                            .await
+                            .expect("Failed to send Ui command");
+
+                        ui_event_sender
+                            .clone()
+                            .send(UiCommand::Error(format!(
+                                "Error while read_input_registers: {}",
+                                e.to_string()
+                            )))
+                            .await
+                            .expect("Failed to send Ui command");
+                        break;
+                    }
+                }
+            }
 
             ui_event_sender
                 .clone()
-                .send(UiCommand::UpdateSensorValue(rsp[0]))
+                .send(UiCommand::UpdateSensorValues(Ok(registers)))
                 .await
                 .expect("Failed to send Ui command");
+
             delay_for(Duration::from_millis(100)).await;
         }
     });
@@ -141,24 +190,4 @@ fn _port_scan() -> Vec<String> {
     debug!("Found ports: {:?}", &ports);
 
     ports
-}
-
-async fn update_sensor(_port: String, _modbus_address: u8) -> Result<Vec<u16>> {
-    let registers = vec![0u16; 49];
-    //
-    // let port = Serial::from_path(
-    //     port,
-    //     &SerialPortSettings {
-    //         baud_rate: 9600,
-    //         ..Default::default()
-    //     },
-    // )
-    // .unwrap();
-    // let mut ctx = rtu::connect_slave(port, modbus_address.into()).await?;
-    //
-    // for (i, reg) in registers.iter_mut().enumerate() {
-    //     let value = ctx.read_input_registers(i as u16, 1).await?;
-    //     *reg = value[0];
-    // }
-    Ok(registers)
 }
