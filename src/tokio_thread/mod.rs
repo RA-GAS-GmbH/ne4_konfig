@@ -107,6 +107,15 @@ pub(crate) fn list_ports() -> tokio_serial::Result<Vec<String>> {
     }
 }
 
+fn _port_scan() -> Vec<String> {
+    let mut ports = list_ports().expect("Scanning for ports should never fail");
+    ports.sort();
+    ports.reverse();
+    debug!("Found ports: {:?}", &ports);
+
+    ports
+}
+
 async fn read_registers(
     port: Option<String>,
     modbus_address: u8,
@@ -116,7 +125,7 @@ async fn read_registers(
     // TODO: Check if thread was alreaddy started
 
     tokio::task::spawn(async move {
-        loop {
+        'update: loop {
             let state = state.lock().await;
             if *state == TokioState::Disconnected {
                 break;
@@ -128,11 +137,11 @@ async fn read_registers(
             settings.baud_rate = 9600;
             let port = Serial::from_path(tty_path, &settings).unwrap();
             let mut registers = vec![0u16; 49];
-
             let mut ctx = rtu::connect_slave(port, slave).await.unwrap();
+
             for (i, reg) in registers.iter_mut().enumerate() {
-                match tokio::time::timeout(
-                    Duration::from_millis(500),
+                match timeout(
+                    Duration::from_millis(1000),
                     ctx.read_input_registers(i as u16, 1),
                 )
                 .await
@@ -142,6 +151,12 @@ async fn read_registers(
                         Err(e) => {
                             ui_event_sender
                                 .clone()
+                                .send(UiCommand::Disconnect)
+                                .await
+                                .expect("Failed to send Ui command");
+
+                            ui_event_sender
+                                .clone()
                                 .send(UiCommand::Error(format!(
                                     "Error while read_register {}: {}",
                                     i,
@@ -149,6 +164,7 @@ async fn read_registers(
                                 )))
                                 .await
                                 .expect("Failed to send Ui command");
+                            break 'update;
                         }
                     },
                     Err(e) => {
@@ -161,33 +177,23 @@ async fn read_registers(
                         ui_event_sender
                             .clone()
                             .send(UiCommand::Error(format!(
-                                "Error while read_input_registers: {}",
+                                "Error while read_input registers: {}",
                                 e.to_string()
                             )))
                             .await
                             .expect("Failed to send Ui command");
-                        break;
+                        break 'update;
                     }
-                }
+                };
             }
-
             ui_event_sender
                 .clone()
                 .send(UiCommand::UpdateSensorValues(Ok(registers)))
                 .await
                 .expect("Failed to send Ui command");
 
-            delay_for(Duration::from_millis(100)).await;
+            delay_for(Duration::from_millis(500)).await;
         }
     });
     Ok(())
-}
-
-fn _port_scan() -> Vec<String> {
-    let mut ports = list_ports().expect("Scanning for ports should never fail");
-    ports.sort();
-    ports.reverse();
-    debug!("Found ports: {:?}", &ports);
-
-    ports
 }
