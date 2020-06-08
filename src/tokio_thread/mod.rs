@@ -124,6 +124,13 @@ async fn read_registers(
 ) -> tokio::io::Result<()> {
     // TODO: Check if thread was alreaddy started
 
+    let tty_path = port.clone().unwrap_or("".into());
+    let slave = Slave(modbus_address);
+    let mut settings = SerialPortSettings::default();
+    settings.baud_rate = 9600;
+    let port = Serial::from_path(tty_path, &settings).unwrap();
+    let mut ctx = rtu::connect_slave(port, slave).await.unwrap();
+
     tokio::task::spawn(async move {
         'update: loop {
             let state = state.lock().await;
@@ -131,13 +138,7 @@ async fn read_registers(
                 break;
             }
 
-            let tty_path = port.clone().unwrap_or("".into());
-            let slave = Slave(modbus_address);
-            let mut settings = SerialPortSettings::default();
-            settings.baud_rate = 9600;
-            let port = Serial::from_path(tty_path, &settings).unwrap();
             let mut registers = vec![0u16; 49];
-            let mut ctx = rtu::connect_slave(port, slave).await.unwrap();
 
             for (i, reg) in registers.iter_mut().enumerate() {
                 match timeout(
