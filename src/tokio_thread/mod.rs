@@ -10,6 +10,7 @@ pub enum TokioCommand {
     Connect,
     Disconnect,
     Messgas(Option<String>, u8),
+    NewWorkingMode(Option<String>, u8, u16),
     Nullpunkt(Option<String>, u8),
     UpdateSensor(Option<String>, u8),
 }
@@ -91,6 +92,16 @@ impl TokioThread {
                                 .await
                                 .expect("Failed to send Ui command")
                         }
+                        TokioCommand::NewWorkingMode(port, modbus_address, working_mode) => {
+                            info!("Execute event TokioCommand::Messgas");
+                            ui_event_sender
+                                .clone()
+                                .send(UiCommand::NewWorkingMode(
+                                    new_working_mode(port, modbus_address, working_mode).await,
+                                ))
+                                .await
+                                .expect("Failed to send Ui command")
+                        }
                     }
                 }
             })
@@ -166,6 +177,24 @@ async fn nullpunkt(port: Option<String>, modbus_address: u8) -> tokio::io::Resul
     ctx.write_single_register(10, 11111).await
 }
 
+async fn new_working_mode(
+    port: Option<String>,
+    modbus_address: u8,
+    working_mode: u16,
+) -> tokio::io::Result<()> {
+    let tty_path = port.clone().unwrap_or("".into());
+    let slave = Slave(modbus_address);
+    let mut settings = SerialPortSettings::default();
+    settings.baud_rate = 9600;
+    let port = Serial::from_path(tty_path, &settings).unwrap();
+    let mut ctx = rtu::connect_slave(port, slave).await.unwrap();
+
+    // Entsperren
+    ctx.write_single_register(49, 9876).await;
+    // Arbeitsmode umstellen
+    ctx.write_single_register(99, working_mode).await
+}
+
 async fn messgas(port: Option<String>, modbus_address: u8) -> tokio::io::Result<()> {
     let tty_path = port.clone().unwrap_or("".into());
     let slave = Slave(modbus_address);
@@ -203,7 +232,7 @@ async fn read_registers(
 
             for (i, reg) in registers.iter_mut().enumerate() {
                 match timeout(
-                    Duration::from_millis(1000),
+                    Duration::from_millis(2000),
                     ctx.read_input_registers(i as u16, 1),
                 )
                 .await
@@ -254,7 +283,7 @@ async fn read_registers(
                 .await
                 .expect("Failed to send Ui command");
 
-            delay_for(Duration::from_millis(500)).await;
+            // delay_for(Duration::from_millis(1000)).await;
         }
     });
     Ok(())

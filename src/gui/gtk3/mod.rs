@@ -47,6 +47,7 @@ pub enum UiCommand {
     UpdateSensorType(String),
     UpdateSensorValue(u16),
     UpdateSensorValues(Result<Vec<u16>, mio_serial::Error>),
+    NewWorkingMode(tokio::io::Result<()>),
     Nullpunkt(tokio::io::Result<()>),
     Messgas(tokio::io::Result<()>),
 }
@@ -157,7 +158,12 @@ fn ui_init(app: &gtk::Application) {
         .expect("Failed to load CSS stylesheet");
 
     // Callbacks
-    let combo_box_text_ports_changed_signal = combo_box_text_ports.connect_changed(move |_| {});
+    let combo_box_text_ports_changed_signal = combo_box_text_ports.connect_changed(clone!(
+    @strong combo_box_text_ports,
+    @strong tokio_thread_sender
+    => move |_| {
+
+    }));
 
     toggle_button_connect.connect_clicked(clone!(
             @strong combo_box_text_ports_map,
@@ -272,8 +278,27 @@ fn ui_init(app: &gtk::Application) {
     }));
 
     button_sensor_working_mode.connect_clicked(clone!(
+        @strong entry_modbus_address,
+        @strong combo_box_text_ports_map,
+        @strong combo_box_text_ports,
         @strong combo_box_text_sensor_working_mode,
-        @strong entry_modbus_address => move |_| {
+        @strong combo_box_text_sensor_working_mode_map,
+        @strong tokio_thread_sender => move |_| {
+            let active_port = combo_box_text_ports.get_active().unwrap_or(0);
+            let mut port = None;
+            for (p, i) in &combo_box_text_ports_map {
+                if *i == active_port {
+                    port = Some(p.to_owned());
+                    break;
+                }
+            }
+            let modbus_address = entry_modbus_address.get_text().unwrap_or("0".into());
+            let working_mode = combo_box_text_sensor_working_mode.get_active_id().unwrap();
+
+            tokio_thread_sender
+                .clone()
+                .try_send(TokioCommand::NewWorkingMode(port, modbus_address.to_owned().parse().unwrap_or(0), working_mode.to_owned().parse().unwrap_or(0)))
+                .expect("Faild to send tokio command");
     }));
 
     // Zugriff auf die Elemente der UI
@@ -432,6 +457,13 @@ fn ui_init(app: &gtk::Application) {
                         //     StatusContext::PortOperation,
                         //     &format!("Update Sensor Values: {:?}", &values),
                         // );
+                    }
+                    UiCommand::NewWorkingMode(value) => {
+                        log_status(
+                            &ui,
+                            StatusContext::PortOperation,
+                            &format!("Arbeitsweise: {:?}", &value),
+                        );
                     }
                     UiCommand::Nullpunkt(value) => {
                         log_status(
