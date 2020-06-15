@@ -1,8 +1,7 @@
 use crate::gui::gtk3::UiCommand;
 use futures::channel::mpsc::*;
 use futures::prelude::*;
-use std::time::Duration;
-use tokio::time::*;
+use tokio::time::{delay_for, timeout, Duration};
 use tokio_modbus::prelude::*;
 use tokio_serial::*;
 
@@ -10,8 +9,8 @@ use tokio_serial::*;
 pub enum TokioCommand {
     Connect,
     Disconnect,
-    Messgas,
-    Nullpunkt,
+    Messgas(Option<String>, u8),
+    Nullpunkt(Option<String>, u8),
     UpdateSensor(Option<String>, u8),
 }
 
@@ -76,19 +75,19 @@ impl TokioThread {
                                 .await
                                 .expect("Failed to send Ui command");
                         }
-                        TokioCommand::Nullpunkt => {
+                        TokioCommand::Nullpunkt(port, modbus_address) => {
                             info!("Execute event TokioCommand::Nullpunkt");
                             ui_event_sender
                                 .clone()
-                                .send(UiCommand::UpdateSensorType("Nullpunkt".into()))
+                                .send(UiCommand::Nullpunkt(nullpunkt(port, modbus_address).await))
                                 .await
                                 .expect("Failed to send Ui command")
                         }
-                        TokioCommand::Messgas => {
+                        TokioCommand::Messgas(port, modbus_address) => {
                             info!("Execute event TokioCommand::Messgas");
                             ui_event_sender
                                 .clone()
-                                .send(UiCommand::UpdateSensorType("Messgas".into()))
+                                .send(UiCommand::Messgas(messgas(port, modbus_address).await))
                                 .await
                                 .expect("Failed to send Ui command")
                         }
@@ -154,6 +153,28 @@ pub fn scan_ports() -> Vec<String> {
     ports.retain(|p| p != "/dev/ttyS0");
 
     ports
+}
+
+async fn nullpunkt(port: Option<String>, modbus_address: u8) -> tokio::io::Result<()> {
+    let tty_path = port.clone().unwrap_or("".into());
+    let slave = Slave(modbus_address);
+    let mut settings = SerialPortSettings::default();
+    settings.baud_rate = 9600;
+    let port = Serial::from_path(tty_path, &settings).unwrap();
+    let mut ctx = rtu::connect_slave(port, slave).await.unwrap();
+
+    ctx.write_single_register(10, 11111).await
+}
+
+async fn messgas(port: Option<String>, modbus_address: u8) -> tokio::io::Result<()> {
+    let tty_path = port.clone().unwrap_or("".into());
+    let slave = Slave(modbus_address);
+    let mut settings = SerialPortSettings::default();
+    settings.baud_rate = 9600;
+    let port = Serial::from_path(tty_path, &settings).unwrap();
+    let mut ctx = rtu::connect_slave(port, slave).await.unwrap();
+
+    ctx.write_single_register(12, 11111).await
 }
 
 async fn read_registers(

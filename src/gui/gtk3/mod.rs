@@ -20,7 +20,7 @@ pub struct Ui {
     combo_box_text_ports_changed_signal: glib::SignalHandlerId,
     combo_box_text_ports_map: HashMap<String, u32>,
     combo_box_text_ports: gtk::ComboBoxText,
-    // combo_box_text_sensor_working_mode_map: HashMap<String, u16>,
+    combo_box_text_sensor_working_mode_map: HashMap<String, u16>,
     combo_box_text_sensor_working_mode: gtk::ComboBoxText,
     entry_modbus_address: gtk::Entry,
     label_sensor_type_value_value: gtk::Label,
@@ -47,6 +47,8 @@ pub enum UiCommand {
     UpdateSensorType(String),
     UpdateSensorValue(u16),
     UpdateSensorValues(Result<Vec<u16>, mio_serial::Error>),
+    Nullpunkt(tokio::io::Result<()>),
+    Messgas(tokio::io::Result<()>),
 }
 
 pub fn launch() {
@@ -108,9 +110,12 @@ fn ui_init(app: &gtk::Application) {
     .iter()
     .cloned()
     .collect();
-    for (name, id) in combo_box_text_sensor_working_mode_map {
+    for (name, id) in combo_box_text_sensor_working_mode_map.clone() {
         combo_box_text_sensor_working_mode.append(Some(&id.to_string()), &name);
     }
+
+    let button_sensor_working_mode: gtk::Button = build!(builder, "button_sensor_working_mode");
+
     // Modbus Adresse
     let entry_modbus_address: gtk::Entry = build!(builder, "entry_modbus_address");
     let entry_new_modbus_address: gtk::Entry = build!(builder, "entry_new_modbus_address");
@@ -199,31 +204,78 @@ fn ui_init(app: &gtk::Application) {
     ));
 
     button_new_modbus_address.connect_clicked(clone!(
+        @strong combo_box_text_ports,
+        @strong combo_box_text_ports_map,
         @strong entry_modbus_address,
-        @strong entry_new_modbus_address
+        @strong entry_new_modbus_address,
+        @strong tokio_thread_sender
         => move |s| {
+            let active_port = combo_box_text_ports.get_active().unwrap_or(0);
+            let mut port = None;
+            for (p, i) in &combo_box_text_ports_map {
+                if *i == active_port {
+                    port = Some(p.to_owned());
+                    break;
+                }
+            }
+            let modbus_address = entry_modbus_address.get_text().unwrap_or("0".into());
+            let new_modbus_address = entry_new_modbus_address.get_text().unwrap_or("0".into());
 
         }
     ));
 
     button_nullpunkt.connect_clicked(clone!(
-        @strong tokio_thread_sender => move |_| {
+        @strong combo_box_text_ports,
+        @strong combo_box_text_ports_map,
+        @strong entry_modbus_address,
+        @strong tokio_thread_sender
+        => move |_| {
+            let active_port = combo_box_text_ports.get_active().unwrap_or(0);
+            let mut port = None;
+            for (p, i) in &combo_box_text_ports_map {
+                if *i == active_port {
+                    port = Some(p.to_owned());
+                    break;
+                }
+            }
+            let modbus_address = entry_modbus_address.get_text().unwrap_or("0".into());
+
             tokio_thread_sender
                 .clone()
-                .try_send(TokioCommand::Connect)
+                .try_send(TokioCommand::Nullpunkt(port, modbus_address.to_owned().parse().unwrap_or(0)))
                 .expect("Faild to send tokio command");
     }));
 
     button_messgas.connect_clicked(clone!(
-        @strong tokio_thread_sender => move |_| {
+        @strong combo_box_text_ports,
+        @strong combo_box_text_ports_map,
+        @strong entry_modbus_address,
+        @strong tokio_thread_sender
+        => move |_| {
+            let active_port = combo_box_text_ports.get_active().unwrap_or(0);
+            let mut port = None;
+            for (p, i) in &combo_box_text_ports_map {
+                if *i == active_port {
+                    port = Some(p.to_owned());
+                    break;
+                }
+            }
+            let modbus_address = entry_modbus_address.get_text().unwrap_or("0".into());
+
             tokio_thread_sender
                 .clone()
-                .try_send(TokioCommand::Disconnect)
+                .try_send(TokioCommand::Messgas(port, modbus_address.to_owned().parse().unwrap_or(0)))
                 .expect("Faild to send tokio command");
     }));
 
     button_reset.connect_clicked(clone!(@strong entry_modbus_address => move |_| {
         entry_modbus_address.set_text("247");
+    }));
+
+    button_sensor_working_mode.connect_clicked(clone!(
+        @strong combo_box_text_sensor_working_mode,
+        @strong entry_modbus_address => move |_| {
+        println!("combo_box_text_sensor_working_mode: {:?}", combo_box_text_sensor_working_mode.get_active_id());
     }));
 
     // Zugriff auf die Elemente der UI
@@ -235,7 +287,7 @@ fn ui_init(app: &gtk::Application) {
         combo_box_text_ports_changed_signal,
         combo_box_text_ports_map,
         combo_box_text_ports,
-        // combo_box_text_sensor_working_mode_map,
+        combo_box_text_sensor_working_mode_map,
         combo_box_text_sensor_working_mode,
         entry_modbus_address,
         label_sensor_type_value_value,
@@ -261,9 +313,12 @@ fn ui_init(app: &gtk::Application) {
                         // Disabel UI Elements ...
                         &ui.toggle_button_connect.set_active(true);
                         &ui.combo_box_text_ports.set_sensitive(false);
+                        &ui.combo_box_text_sensor_working_mode.set_active(None);
                         &ui.combo_box_text_sensor_working_mode.set_sensitive(false);
                         &ui.entry_modbus_address.set_sensitive(false);
                         &ui.button_reset.set_sensitive(false);
+                        &ui.label_sensor_type_value
+                            .set_text("RA-GAS GmbH - NE4_MOD_BUS");
                         // log_status(
                         //     &ui,
                         //     StatusContext::PortOperation,
@@ -278,6 +333,7 @@ fn ui_init(app: &gtk::Application) {
                         &ui.combo_box_text_sensor_working_mode.set_sensitive(true);
                         &ui.entry_modbus_address.set_sensitive(true);
                         &ui.button_reset.set_sensitive(true);
+                        &ui.label_sensor_type_value.set_text("");
                         // log_status(
                         //     &ui,
                         //     StatusContext::PortOperation,
@@ -368,9 +424,11 @@ fn ui_init(app: &gtk::Application) {
                         // );
                     }
                     UiCommand::UpdateSensorValues(values) => {
+                        println!("{:?}", &ui.combo_box_text_sensor_working_mode);
+                        // println!("{:?}", &ui.combo_box_text_sensor_working_mode_map);
                         info!("Execute event UiCommand::UpdateSensorValues");
                         let values = values.unwrap();
-                        &ui.combo_box_text_sensor_working_mode.set_active(Some(0));
+                        &ui.combo_box_text_sensor_working_mode.set_active(Some(1));
                         &ui.label_sensor_type_value_value
                             .set_text(&values[2].to_string());
                         // log_status(
@@ -378,6 +436,20 @@ fn ui_init(app: &gtk::Application) {
                         //     StatusContext::PortOperation,
                         //     &format!("Update Sensor Values: {:?}", &values),
                         // );
+                    }
+                    UiCommand::Nullpunkt(value) => {
+                        log_status(
+                            &ui,
+                            StatusContext::PortOperation,
+                            &format!("Nullpunkt: {:?}", &value),
+                        );
+                    }
+                    UiCommand::Messgas(value) => {
+                        log_status(
+                            &ui,
+                            StatusContext::PortOperation,
+                            &format!("Messgas: {:?}", &value),
+                        );
                     }
                 }
             }
