@@ -48,6 +48,7 @@ pub enum UiCommand {
     UpdateSensorValue(u16),
     UpdateSensorValues(Result<Vec<u16>, mio_serial::Error>),
     NewWorkingMode(tokio::io::Result<()>),
+    NewModbusAddress(tokio::io::Result<()>),
     Nullpunkt(tokio::io::Result<()>),
     Messgas(tokio::io::Result<()>),
 }
@@ -226,6 +227,10 @@ fn ui_init(app: &gtk::Application) {
             let modbus_address = entry_modbus_address.get_text().unwrap_or("0".into());
             let new_modbus_address = entry_new_modbus_address.get_text().unwrap_or("0".into());
 
+            tokio_thread_sender
+                .clone()
+                .try_send(TokioCommand::NewModbusAddress(port, modbus_address.to_owned().parse().unwrap_or(0), new_modbus_address.to_owned().parse().unwrap_or(0)))
+                .expect("Faild to send tokio command");
         }
     ));
 
@@ -457,6 +462,13 @@ fn ui_init(app: &gtk::Application) {
                         //     StatusContext::PortOperation,
                         //     &format!("Update Sensor Values: {:?}", &values),
                         // );
+                    }
+                    UiCommand::NewModbusAddress(value) => {
+                        log_status(
+                            &ui,
+                            StatusContext::PortOperation,
+                            &format!("Neue Modbus Adresse: {:?}", &value),
+                        );
                     }
                     UiCommand::NewWorkingMode(value) => {
                         log_status(

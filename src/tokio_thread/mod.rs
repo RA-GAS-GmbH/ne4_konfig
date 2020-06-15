@@ -11,6 +11,7 @@ pub enum TokioCommand {
     Disconnect,
     Messgas(Option<String>, u8),
     NewWorkingMode(Option<String>, u8, u16),
+    NewModbusAddress(Option<String>, u8, u8),
     Nullpunkt(Option<String>, u8),
     UpdateSensor(Option<String>, u8),
 }
@@ -98,6 +99,16 @@ impl TokioThread {
                                 .clone()
                                 .send(UiCommand::NewWorkingMode(
                                     new_working_mode(port, modbus_address, working_mode).await,
+                                ))
+                                .await
+                                .expect("Failed to send Ui command")
+                        }
+                        TokioCommand::NewModbusAddress(port, modbus_address, new_modbus) => {
+                            info!("Execute event TokioCommand::Messgas");
+                            ui_event_sender
+                                .clone()
+                                .send(UiCommand::NewModbusAddress(
+                                    new_modbus_address(port, modbus_address, new_modbus).await,
                                 ))
                                 .await
                                 .expect("Failed to send Ui command")
@@ -193,6 +204,25 @@ async fn new_working_mode(
     ctx.write_single_register(49, 9876).await;
     // Arbeitsmode umstellen
     ctx.write_single_register(99, working_mode).await
+}
+
+async fn new_modbus_address(
+    port: Option<String>,
+    modbus_address: u8,
+    new_modbus_address: u8,
+) -> tokio::io::Result<()> {
+    let tty_path = port.clone().unwrap_or("".into());
+    let slave = Slave(modbus_address);
+    let mut settings = SerialPortSettings::default();
+    settings.baud_rate = 9600;
+    let port = Serial::from_path(tty_path, &settings).unwrap();
+    let mut ctx = rtu::connect_slave(port, slave).await.unwrap();
+
+    // Entsperren
+    ctx.write_single_register(49, 9876).await;
+    // Arbeitsmode umstellen
+    ctx.write_single_register(50, new_modbus_address.into())
+        .await
 }
 
 async fn messgas(port: Option<String>, modbus_address: u8) -> tokio::io::Result<()> {
