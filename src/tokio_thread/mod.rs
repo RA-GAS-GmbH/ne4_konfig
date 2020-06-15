@@ -1,6 +1,7 @@
 use crate::gui::gtk3::UiCommand;
 use futures::channel::mpsc::*;
 use futures::prelude::*;
+use std::time::Duration;
 use tokio::time::*;
 use tokio_modbus::prelude::*;
 use tokio_serial::*;
@@ -27,6 +28,8 @@ pub struct TokioThread {
 impl TokioThread {
     pub fn new(ui_event_sender: Sender<UiCommand>) -> Self {
         let (tokio_thread_sender, mut tokio_thread_receiver) = futures::channel::mpsc::channel(0);
+        // Clone the ui_event_sender. This is used in a second thread, see below.
+        let ui_event_sender2 = ui_event_sender.clone();
 
         std::thread::spawn(move || {
             // Tokio Thread
@@ -94,6 +97,43 @@ impl TokioThread {
             })
         });
 
+        // Another Thread to check the serial Intefaces.
+        std::thread::spawn(move || {
+            // Tokio Thread
+            let mut rt = tokio::runtime::Runtime::new().expect("create tokio runtime");
+
+            rt.block_on(async {
+                let mut ports: Vec<String> = vec![];
+                let mut interval = tokio::time::interval(Duration::from_millis(100));
+
+                // Initial send one update ports for program start
+                let available_ports = scan_ports();
+                ui_event_sender2
+                    .clone()
+                    .send(UiCommand::UpdatePorts(available_ports.clone()))
+                    .await;
+
+                loop {
+                    let available_ports = scan_ports();
+                    if available_ports.len() > ports.len() {
+                        ui_event_sender2
+                            .clone()
+                            .send(UiCommand::UpdatePorts(available_ports.clone()))
+                            .await;
+                    } else if available_ports.len() < ports.len() {
+                        ui_event_sender2.clone().send(UiCommand::Disconnect).await;
+
+                        ui_event_sender2
+                            .clone()
+                            .send(UiCommand::UpdatePorts(available_ports.clone()))
+                            .await;
+                    };
+                    ports = available_ports;
+                    interval.tick().await;
+                }
+            });
+        });
+
         TokioThread {
             tokio_thread_sender,
         }
@@ -107,11 +147,11 @@ pub(crate) fn list_ports() -> tokio_serial::Result<Vec<String>> {
     }
 }
 
-fn _port_scan() -> Vec<String> {
+pub fn scan_ports() -> Vec<String> {
     let mut ports = list_ports().expect("Scanning for ports should never fail");
     ports.sort();
-    ports.reverse();
-    debug!("Found ports: {:?}", &ports);
+    // Remove unwanted ports
+    ports.retain(|p| p != "/dev/ttyS0");
 
     ports
 }
@@ -159,7 +199,7 @@ async fn read_registers(
                             ui_event_sender
                                 .clone()
                                 .send(UiCommand::Error(format!(
-                                    "Error while read_register {}: {}",
+                                    "Register {} konnte nicht gelesen werden: {}",
                                     i,
                                     e.to_string()
                                 )))
@@ -178,7 +218,7 @@ async fn read_registers(
                         ui_event_sender
                             .clone()
                             .send(UiCommand::Error(format!(
-                                "Error while read_input registers: {}",
+                                "Timeout beim lesen aller Register des Sensors: {}",
                                 e.to_string()
                             )))
                             .await

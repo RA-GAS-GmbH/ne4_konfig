@@ -1,10 +1,12 @@
-use crate::tokio_thread::*;
+use crate::tokio_thread;
+use crate::tokio_thread::{TokioCommand, TokioThread};
 use chrono::Utc;
 use gio::prelude::*;
 use glib::clone;
 use glib::{signal_handler_block, signal_handler_unblock};
 use gtk::prelude::*;
 use gtk::Application;
+use std::cell::RefCell;
 use std::collections::HashMap;
 
 #[macro_use]
@@ -41,7 +43,7 @@ pub enum UiCommand {
     Error(String),
     Disconnect,
     EnableConnectUiElements,
-    PortsFound(Vec<String>),
+    UpdatePorts(Vec<String>),
     UpdateSensorType(String),
     UpdateSensorValue(u16),
     UpdateSensorValues(Result<Vec<u16>, mio_serial::Error>),
@@ -63,7 +65,9 @@ pub fn launch() {
 
 fn ui_init(app: &gtk::Application) {
     // Create and start the tokio thread
-    // communication erfolgt via the tokio_thread_sender
+    // The tokio thread new function gets the `ui_event_sender` for communication with the
+    // UI thread. TokioThread::new() returns the `tokio_thread_sender` to communicate with the
+    // TokioThread.
     let (ui_event_sender, mut ui_event_receiver) = futures::channel::mpsc::channel(0);
     let tokio_thread = TokioThread::new(ui_event_sender);
     let tokio_thread_sender = tokio_thread.tokio_thread_sender;
@@ -83,26 +87,8 @@ fn ui_init(app: &gtk::Application) {
             .collect();
     // Serial port selector
     let combo_box_text_ports: gtk::ComboBoxText = build!(builder, "combo_box_text_ports");
-    let mut combo_box_text_ports_map = HashMap::new();
-    if let Ok(mut ports) = list_ports() {
-        ports.sort();
-        ports.reverse();
-        if !ports.is_empty() {
-            for (i, p) in (0u32..).zip(ports.into_iter()) {
-                combo_box_text_ports.append(None, &p);
-                combo_box_text_ports_map.insert(p, i);
-            }
-            combo_box_text_ports.set_active(Some(0));
-        } else {
-            combo_box_text_ports.append(None, "Keine Schnittstelle gefunden");
-            combo_box_text_ports.set_active(Some(0));
-            combo_box_text_ports.set_sensitive(false);
-        }
-    } else {
-        combo_box_text_ports.append(None, "Keine Schnittstelle gefunden");
-        combo_box_text_ports.set_active(Some(0));
-        combo_box_text_ports.set_sensitive(false);
-    }
+    let mut combo_box_text_ports_map = HashMap::<String, u32>::new();
+    scan_ports(&combo_box_text_ports, &mut combo_box_text_ports_map);
 
     // Sensor Working Mode selector
     let combo_box_text_sensor_working_mode: gtk::ComboBoxText =
@@ -127,13 +113,16 @@ fn ui_init(app: &gtk::Application) {
     }
     // Modbus Adresse
     let entry_modbus_address: gtk::Entry = build!(builder, "entry_modbus_address");
+    let entry_new_modbus_address: gtk::Entry = build!(builder, "entry_new_modbus_address");
+
     // Reset Button
     let button_reset: gtk::Button = build!(builder, "button_reset");
     // Labels Sensor Werte
     let label_sensor_type_value: gtk::Label = build!(builder, "label_sensor_type_value");
     let button_nullpunkt: gtk::Button = build!(builder, "button_nullpunkt");
     let button_messgas: gtk::Button = build!(builder, "button_messgas");
-    let button_reset: gtk::Button = build!(builder, "button_reset");
+
+    let button_new_modbus_address: gtk::Button = build!(builder, "button_new_modbus_address");
 
     // ListStore Sensor Values
     let _list_store_sensor: gtk::ListStore = build!(builder, "list_store_sensor");
@@ -171,34 +160,51 @@ fn ui_init(app: &gtk::Application) {
             @strong entry_modbus_address,
             @strong tokio_thread_sender
             => move |s| {
-        if s.get_active() {
-            // get port
-            let active_port = combo_box_text_ports.get_active().unwrap_or(0);
-            let mut port = None;
-            for (p, i) in &combo_box_text_ports_map {
-                if *i == active_port {
-                    port = Some(p.to_owned());
-                    break;
-                }
-            }
-            // get modbus_address
-            let modbus_address = entry_modbus_address.get_text().unwrap_or("0".into());
-            tokio_thread_sender
-                .clone()
-                .try_send(TokioCommand::Connect)
-                .expect("Faild to send tokio command");
+                if s.get_active() {
+                    // get port
+                    let active_port = combo_box_text_ports.get_active().unwrap_or(0);
+                    info!("active_port: {:?}", &active_port);
+                    println!("combo_box_text_ports_map: {:?}", &combo_box_text_ports_map);
 
-            tokio_thread_sender
-                .clone()
-                .try_send(TokioCommand::UpdateSensor(port, modbus_address.parse().unwrap()))
-                .expect("Faild to send tokio command");
-        } else {
+                    let mut port = None;
+                    for (p, i) in &combo_box_text_ports_map {
+                        if *i == active_port {
+                            port = Some(p.to_owned());
+                            break;
+                        }
+                    }
+                    info!("port: {:?}", &port);
+
+                    // get modbus_address
+                    let modbus_address = entry_modbus_address.get_text().unwrap_or("0".into());
+                    info!("port: {:?}, modbus_address: {:?}", &port, &modbus_address);
+
+                    tokio_thread_sender
+                        .clone()
+                        .try_send(TokioCommand::Connect)
+                        .expect("Faild to send tokio command");
+
+                    tokio_thread_sender
+                        .clone()
+                        .try_send(TokioCommand::UpdateSensor(port, modbus_address.parse().unwrap()))
+                        .expect("Faild to send tokio command");
+
+                } else {
             tokio_thread_sender
                 .clone()
                 .try_send(TokioCommand::Disconnect)
                 .expect("Faild to send tokio command");
         }
-    }));
+            }
+    ));
+
+    button_new_modbus_address.connect_clicked(clone!(
+        @strong entry_modbus_address,
+        @strong entry_new_modbus_address
+        => move |s| {
+
+        }
+    ));
 
     button_nullpunkt.connect_clicked(clone!(
         @strong tokio_thread_sender => move |_| {
@@ -313,61 +319,30 @@ fn ui_init(app: &gtk::Application) {
                             &format!("Error: {:?}", e),
                         );
                     }
-                    UiCommand::PortsFound(ports) => {
-                        info!("Execute event UiCommand::PortsFound");
-                        // Determine if the new found port match existing ones
-                        let replace = {
-                            if ports.len() != ui.combo_box_text_ports_map.len() {
-                                true
-                            } else {
-                                ports
-                                    .iter()
-                                    .enumerate()
-                                    .map(|t| ui.combo_box_text_ports_map[t.1] != t.0 as u32)
-                                    .all(|x| x)
+                    UiCommand::UpdatePorts(ports) => {
+                        info!("Execute event UiCommand::UpdatePorts: {:?}", ports);
+                        // Update the port listing and other UI elements
+                        ui.combo_box_text_ports.remove_all();
+                        ui.combo_box_text_ports_map.clear();
+                        if ports.is_empty() {
+                            ui.combo_box_text_ports
+                                .append(None, "Keine Schnittstelle gefunden");
+                            ui.combo_box_text_ports.set_sensitive(false);
+                            ui.toggle_button_connect.set_sensitive(false);
+                        } else {
+                            for (i, p) in (0u32..).zip(ports.clone().into_iter()) {
+                                ui.combo_box_text_ports.append(None, &p);
+                                ui.combo_box_text_ports_map.insert(p, i);
                             }
-                        };
-
-                        if replace {
-                            // First save whichever the currently-selected port is
-                            let current_port = {
-                                let active_port = ui.combo_box_text_ports.get_active().unwrap_or(0);
-                                let mut n = None;
-                                for (p, i) in &ui.combo_box_text_ports_map {
-                                    if *i == active_port {
-                                        n = Some(p.to_owned());
-                                        break;
-                                    }
-                                }
-                                n
-                            };
-
-                            ui.combo_box_text_ports.remove_all();
-                            ui.combo_box_text_ports_map.clear();
-                            if ports.is_empty() {
-                                ui.combo_box_text_ports
-                                    .append(None, "Keine Schnittstelle gefunden");
-                                ui.combo_box_text_ports.set_sensitive(false);
-                                &ui.toggle_button_connect.set_sensitive(false);
-                            } else {
-                                for (i, p) in (0u32..).zip(ports.clone().into_iter()) {
-                                    ui.combo_box_text_ports.append(None, &p);
-                                    ui.combo_box_text_ports_map.insert(p, i);
-                                }
-                                ui.combo_box_text_ports.set_sensitive(true);
-                                ui.toggle_button_connect.set_sensitive(true);
-                            }
+                            ui.combo_box_text_ports.set_sensitive(true);
+                            ui.toggle_button_connect.set_sensitive(true);
+                        }
+                        if !ports.is_empty() {
                             signal_handler_block(
                                 &ui.combo_box_text_ports,
                                 &ui.combo_box_text_ports_changed_signal,
                             );
-                            if let Some(p) = current_port {
-                                ui.combo_box_text_ports.set_active(Some(
-                                    *ui.combo_box_text_ports_map.get(&p).unwrap_or(&0),
-                                ));
-                            } else {
-                                ui.combo_box_text_ports.set_active(Some(0));
-                            }
+                            ui.combo_box_text_ports.set_active(Some(0));
                             signal_handler_unblock(
                                 &ui.combo_box_text_ports,
                                 &ui.combo_box_text_ports_changed_signal,
@@ -376,7 +351,10 @@ fn ui_init(app: &gtk::Application) {
                         log_status(
                             &ui,
                             StatusContext::PortOperation,
-                            &format!("Ports found: {:?}", &ports),
+                            &format!(
+                                "Ports found: {:?}; ports_map: {:?}",
+                                ports, &ui.combo_box_text_ports_map
+                            ),
                         );
                     }
                     UiCommand::UpdateSensorValue(value) => {
@@ -416,4 +394,22 @@ fn log_status(ui: &Ui, context: StatusContext, message: &str) {
     let timestamp = Utc::now().format("%Y-%m-%d %H:%M:%S");
     let formatted_message = format!("[{}]: {}", timestamp, message);
     ui.statusbar_application.push(0, &formatted_message);
+}
+
+fn scan_ports(
+    combo_box_text_ports: &gtk::ComboBoxText,
+    combo_box_text_ports_map: &mut HashMap<String, u32>,
+) {
+    let ports = tokio_thread::scan_ports();
+    if !ports.is_empty() {
+        for (i, p) in (0u32..).zip(ports.into_iter()) {
+            combo_box_text_ports.append(None, &p);
+            combo_box_text_ports_map.insert(p, i);
+        }
+        combo_box_text_ports.set_active(Some(0));
+    } else {
+        combo_box_text_ports.append(None, "Keine Schnittstelle gefunden");
+        combo_box_text_ports.set_active(Some(0));
+        combo_box_text_ports.set_sensitive(false);
+    }
 }

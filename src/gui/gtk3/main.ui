@@ -370,7 +370,7 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
               <object class="GtkEntry" id="entry_modbus_address">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="max_length">247</property>
+                <property name="max_length">3</property>
                 <property name="width_chars">6</property>
                 <property name="max_width_chars">3</property>
                 <property name="text" translatable="yes">247</property>
@@ -445,7 +445,7 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
                       <object class="GtkEntry" id="entry_new_modbus_address">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
-                        <property name="max_length">247</property>
+                        <property name="max_length">3</property>
                         <property name="width_chars">6</property>
                         <property name="max_width_chars">3</property>
                         <property name="xalign">1</property>
