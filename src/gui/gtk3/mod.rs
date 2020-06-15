@@ -169,7 +169,6 @@ fn ui_init(app: &gtk::Application) {
                     // get port
                     let active_port = combo_box_text_ports.get_active().unwrap_or(0);
                     info!("active_port: {:?}", &active_port);
-                    println!("combo_box_text_ports_map: {:?}", &combo_box_text_ports_map);
 
                     let mut port = None;
                     for (p, i) in &combo_box_text_ports_map {
@@ -275,7 +274,6 @@ fn ui_init(app: &gtk::Application) {
     button_sensor_working_mode.connect_clicked(clone!(
         @strong combo_box_text_sensor_working_mode,
         @strong entry_modbus_address => move |_| {
-        println!("combo_box_text_sensor_working_mode: {:?}", combo_box_text_sensor_working_mode.get_active_id());
     }));
 
     // Zugriff auf die Elemente der UI
@@ -313,7 +311,6 @@ fn ui_init(app: &gtk::Application) {
                         // Disabel UI Elements ...
                         &ui.toggle_button_connect.set_active(true);
                         &ui.combo_box_text_ports.set_sensitive(false);
-                        &ui.combo_box_text_sensor_working_mode.set_active(None);
                         &ui.combo_box_text_sensor_working_mode.set_sensitive(false);
                         &ui.entry_modbus_address.set_sensitive(false);
                         &ui.button_reset.set_sensitive(false);
@@ -424,11 +421,10 @@ fn ui_init(app: &gtk::Application) {
                         // );
                     }
                     UiCommand::UpdateSensorValues(values) => {
-                        println!("{:?}", &ui.combo_box_text_sensor_working_mode);
-                        // println!("{:?}", &ui.combo_box_text_sensor_working_mode_map);
                         info!("Execute event UiCommand::UpdateSensorValues");
                         let values = values.unwrap();
-                        &ui.combo_box_text_sensor_working_mode.set_active(Some(1));
+                        &ui.combo_box_text_sensor_working_mode
+                            .set_active_id(Some(&values[1].to_string()));
                         &ui.label_sensor_type_value_value
                             .set_text(&values[2].to_string());
                         // log_status(
