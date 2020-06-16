@@ -4,6 +4,8 @@ GUI für die Konfiguration der 'NE4-MOD-BUS' Sensoren
 [![Appveyor CI status](https://ci.appveyor.com/api/projects/status/sqhnkrgqba67o4m4/branch/master?svg=true)](https://ci.appveyor.com/project/zzeroo/ne4-konfig/branch/master)
 
 
+![Screenshots](resources/screenshots.png)
+
 # `NE4-MOD-BUS` Konfiguration
 
 # Installation
