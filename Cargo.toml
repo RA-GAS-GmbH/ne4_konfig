@@ -1,6 +1,6 @@
 [package]
 name = "ne4_konfig"
-version = "0.3.0"
+version = "1.0.0"
 authors = ["Stefan Müller <zzeroo> <co@zzeroo.com>"]
 license = "GPL-3.0"
 readme = "README.md"
@@ -24,6 +24,7 @@ serde = "1.0.110"
 tokio-modbus = "0.4.0"
 # I need port enumeration, so I've patched tokio-serial.
 tokio-serial = { git = "https://github.com/zzeroo/tokio-serial.git", branch = "feature/port_enumeration" }
+mio-serial = "3.3.1"
 
 [dependencies.gtk]
 version = "0.8.1"
@@ -35,4 +36,4 @@ features = ["v2_44"]
 
 [dependencies.tokio]
 version = "0.2.20"
-features = ["full"] 
+features = ["full"]
