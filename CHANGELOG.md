@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.0.0] - 2020-06-16
+### Added
+- Abfrage der Sensordaten komplett
+- Modbus Adresse kann gesetzt werden
+- Arbeitsweise des Sensors kann gesetzt werden
+- erweiterte Ansicht mit alle Rreg Registern
+- Statusleiste am unteren Bildschirmrand informiert über aktuelle Funktion der GUI
+
 ## [v0.3.0] - 2020-05-10
 - Sensordaten werden nun fast vollständig angezeigt
 
