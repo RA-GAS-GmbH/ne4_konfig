@@ -1,18 +1,17 @@
-#label_sensor_working_mode_value,
 #label_sensor_type_value {
   font-weight: bolder;
   font-size: 1.5em;
 }
 
-#label_sensor_type_value_si,
-#label_sensor_type_value_value {
+#label_sensor_value_si,
+#label_sensor_value_value {
   font-weight: bolder;
   font-size: 3em;
 }
 
-#label_sensor_type_value_value {
-  font-weight: bolder;
-  font-size: 8em;
-}
 
-.red { color: red; }
+#label_sensor_ma_si,
+#label_sensor_ma_value {
+  font-weight: bolder;
+  font-size: 1.5em;
+}

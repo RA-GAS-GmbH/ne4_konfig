@@ -239,12 +239,14 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
                   <object class="GtkBox" id="hbox_new_modbus_address">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="valign">end</property>
                     <child>
                       <object class="GtkLabel" id="label_new_modbus_address">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="valign">end</property>
                         <property name="label" translatable="yes">Neue Modbus Adresse:</property>
-                        <property name="width_chars">20</property>
+                        <property name="width_chars">40</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -295,14 +297,13 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
                   <object class="GtkBox" id="hbox_sensor_type">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="valign">end</property>
                     <child>
                       <object class="GtkLabel" id="label_sensor_type">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="valign">end</property>
                         <property name="label" translatable="yes">Sensor Typ:</property>
-                        <property name="width_chars">20</property>
+                        <property name="width_chars">40</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -341,7 +342,7 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
                         <property name="can_focus">False</property>
                         <property name="valign">end</property>
                         <property name="label" translatable="yes">Arbeitsweise:</property>
-                        <property name="width_chars">20</property>
+                        <property name="width_chars">40</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -384,15 +385,13 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
                   <object class="GtkBox" id="hbox_sensor_value">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="valign">end</property>
                     <child>
-                      <object class="GtkLabel" id="label_sensor_type2">
+                      <object class="GtkLabel" id="label_sensor_value">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="halign">end</property>
                         <property name="valign">end</property>
                         <property name="label" translatable="yes">Gaskonzentration:</property>
-                        <property name="width_chars">20</property>
+                        <property name="width_chars">40</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -401,11 +400,11 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="label_sensor_type_value_value">
-                        <property name="name">label_sensor_type_value_value</property>
+                      <object class="GtkLabel" id="label_sensor_value_value">
+                        <property name="name">label_sensor_value_value</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="halign">start</property>
+                        <property name="halign">baseline</property>
                         <property name="valign">end</property>
                         <property name="margin_end">10</property>
                         <property name="label" translatable="yes">0</property>
@@ -417,11 +416,11 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="label_sensor_type_value_si">
-                        <property name="name">label_sensor_type_value_si</property>
+                      <object class="GtkLabel" id="label_sensor_value_si">
+                        <property name="name">label_sensor_value_si</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="halign">start</property>
+                        <property name="halign">baseline</property>
                         <property name="valign">end</property>
                         <property name="label" translatable="yes">ppm</property>
                       </object>
@@ -436,6 +435,62 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
                     <property name="expand">True</property>
                     <property name="fill">True</property>
                     <property name="position">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkBox" id="hbox_sensor_ma">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <child>
+                      <object class="GtkLabel" id="label_sensor_ma">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="valign">end</property>
+                        <property name="label" translatable="yes">Ausgangsstrom</property>
+                        <property name="width_chars">40</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="label_sensor_ma_value">
+                        <property name="name">label_sensor_ma_value</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="halign">baseline</property>
+                        <property name="valign">end</property>
+                        <property name="margin_end">10</property>
+                        <property name="label" translatable="yes">0</property>
+                      </object>
+                      <packing>
+                        <property name="expand">True</property>
+                        <property name="fill">True</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="label_sensor_ma_si">
+                        <property name="name">label_sensor_ma_si</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="halign">baseline</property>
+                        <property name="valign">end</property>
+                        <property name="label" translatable="yes">mA</property>
+                      </object>
+                      <packing>
+                        <property name="expand">True</property>
+                        <property name="fill">True</property>
+                        <property name="position">2</property>
+                      </packing>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">4</property>
                   </packing>
                 </child>
                 <child>
@@ -472,7 +527,7 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
                   <packing>
                     <property name="expand">True</property>
                     <property name="fill">True</property>
-                    <property name="position">4</property>
+                    <property name="position">5</property>
                   </packing>
                 </child>
               </object>
