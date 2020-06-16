@@ -23,8 +23,10 @@
   - [] https://gitlab.com/RA-GAS-GmbH/ne4_konfig/pipelines Ok?
 - [] `git checkout master` wechsele in den *master* Branch
 - [] `git merge --no-ff development` merge den lokalen 'development' Branch
-- [] `git tag vN.N.N` Tagge die Version
-- [] `git push --tags`
+- [] `git tag vN.N.N` Version getagged?
+- [] `git push --tags` Taggs veröffentlicht?
+- [] `git push github` finale Version auf Github veröffentlicht?
+- [] `git push origin` finale Version auf Gitlab veröffentlicht?
 
 ## Release packen
 ## Windows Binaries (32 und 64Bit gemeinsam)
