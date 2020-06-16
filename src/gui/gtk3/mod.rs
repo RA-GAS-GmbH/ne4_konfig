@@ -13,9 +13,11 @@ pub mod macros;
 
 pub struct Ui {
     // application_window: gtk::ApplicationWindow,
-    // button_messgas: gtk::Button,
-    // button_nullpunkt: gtk::Button,
+    button_messgas: gtk::Button,
+    button_nullpunkt: gtk::Button,
     button_reset: gtk::Button,
+    button_new_modbus_address: gtk::Button,
+    button_sensor_working_mode: gtk::Button,
     combo_box_text_ports_changed_signal: glib::SignalHandlerId,
     combo_box_text_ports_map: HashMap<String, u32>,
     combo_box_text_ports: gtk::ComboBoxText,
@@ -128,8 +130,8 @@ fn ui_init(app: &gtk::Application) {
     let label_sensor_type_value: gtk::Label = build!(builder, "label_sensor_type_value");
     let button_nullpunkt: gtk::Button = build!(builder, "button_nullpunkt");
     let button_messgas: gtk::Button = build!(builder, "button_messgas");
-
     let button_new_modbus_address: gtk::Button = build!(builder, "button_new_modbus_address");
+    let button_sensor_working_mode: gtk::Button = build!(builder, "button_sensor_working_mode");
 
     // ListStore Sensor Values
     let list_store_sensor: gtk::ListStore = build!(builder, "list_store_sensor");
@@ -313,9 +315,11 @@ fn ui_init(app: &gtk::Application) {
     // Zugriff auf die Elemente der UI
     let mut ui = Ui {
         // application_window: application_window.clone(),
-        // button_messgas,
-        // button_nullpunkt,
+        button_messgas,
+        button_nullpunkt,
         button_reset,
+        button_new_modbus_address,
+        button_sensor_working_mode,
         combo_box_text_ports_changed_signal,
         combo_box_text_ports_map,
         combo_box_text_ports,
@@ -350,6 +354,10 @@ fn ui_init(app: &gtk::Application) {
                         &ui.button_reset.set_sensitive(false);
                         &ui.label_sensor_type_value
                             .set_text("RA-GAS GmbH - NE4_MOD_BUS");
+                        &ui.button_nullpunkt.set_sensitive(false);
+                        &ui.button_messgas.set_sensitive(false);
+                        &ui.button_new_modbus_address.set_sensitive(false);
+                        &ui.button_sensor_working_mode.set_sensitive(false);
                         // log_status(
                         //     &ui,
                         //     StatusContext::PortOperation,
@@ -365,6 +373,10 @@ fn ui_init(app: &gtk::Application) {
                         &ui.entry_modbus_address.set_sensitive(true);
                         &ui.button_reset.set_sensitive(true);
                         &ui.label_sensor_type_value.set_text("");
+                        &ui.button_nullpunkt.set_sensitive(true);
+                        &ui.button_messgas.set_sensitive(true);
+                        &ui.button_new_modbus_address.set_sensitive(true);
+                        &ui.button_sensor_working_mode.set_sensitive(true);
                         // log_status(
                         //     &ui,
                         //     StatusContext::PortOperation,
