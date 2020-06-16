@@ -1,7 +1,7 @@
 use crate::gui::gtk3::UiCommand;
 use futures::channel::mpsc::*;
 use futures::prelude::*;
-use tokio::time::{delay_for, timeout, Duration};
+use tokio::time::{timeout, Duration};
 use tokio_modbus::prelude::*;
 use tokio_serial::*;
 
@@ -129,7 +129,7 @@ impl TokioThread {
 
                 // Initial send one update ports for program start
                 let available_ports = scan_ports();
-                ui_event_sender2
+                let _ = ui_event_sender2
                     .clone()
                     .send(UiCommand::UpdatePorts(available_ports.clone()))
                     .await;
@@ -137,14 +137,14 @@ impl TokioThread {
                 loop {
                     let available_ports = scan_ports();
                     if available_ports.len() > ports.len() {
-                        ui_event_sender2
+                        let _ = ui_event_sender2
                             .clone()
                             .send(UiCommand::UpdatePorts(available_ports.clone()))
                             .await;
                     } else if available_ports.len() < ports.len() {
-                        ui_event_sender2.clone().send(UiCommand::Disconnect).await;
+                        let _ = ui_event_sender2.clone().send(UiCommand::Disconnect).await;
 
-                        ui_event_sender2
+                        let _ = ui_event_sender2
                             .clone()
                             .send(UiCommand::UpdatePorts(available_ports.clone()))
                             .await;
@@ -201,7 +201,7 @@ async fn new_working_mode(
     let mut ctx = rtu::connect_slave(port, slave).await.unwrap();
 
     // Entsperren
-    ctx.write_single_register(49, 9876).await;
+    let _ = ctx.write_single_register(49, 9876).await;
     // Arbeitsmode umstellen
     ctx.write_single_register(99, working_mode).await
 }
@@ -219,7 +219,7 @@ async fn new_modbus_address(
     let mut ctx = rtu::connect_slave(port, slave).await.unwrap();
 
     // Entsperren
-    ctx.write_single_register(49, 9876).await;
+    let _ = ctx.write_single_register(49, 9876).await;
     // Arbeitsmode umstellen
     ctx.write_single_register(50, new_modbus_address.into())
         .await
@@ -258,7 +258,7 @@ async fn read_registers(
                 break;
             }
 
-            let mut registers = vec![0u16; 49];
+            let mut registers = vec![0u16; 50];
 
             for (i, reg) in registers.iter_mut().enumerate() {
                 match timeout(

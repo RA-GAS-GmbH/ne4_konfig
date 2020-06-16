@@ -6,7 +6,6 @@ use glib::clone;
 use glib::{signal_handler_block, signal_handler_unblock};
 use gtk::prelude::*;
 use gtk::Application;
-use std::cell::RefCell;
 use std::collections::HashMap;
 
 #[macro_use]
@@ -14,18 +13,18 @@ pub mod macros;
 
 pub struct Ui {
     // application_window: gtk::ApplicationWindow,
-    button_messgas: gtk::Button,
-    button_nullpunkt: gtk::Button,
+    // button_messgas: gtk::Button,
+    // button_nullpunkt: gtk::Button,
     button_reset: gtk::Button,
     combo_box_text_ports_changed_signal: glib::SignalHandlerId,
     combo_box_text_ports_map: HashMap<String, u32>,
     combo_box_text_ports: gtk::ComboBoxText,
-    combo_box_text_sensor_working_mode_map: HashMap<String, u16>,
+    // combo_box_text_sensor_working_mode_map: HashMap<String, u16>,
     combo_box_text_sensor_working_mode: gtk::ComboBoxText,
     entry_modbus_address: gtk::Entry,
     label_sensor_type_value_value: gtk::Label,
     label_sensor_type_value: gtk::Label,
-    // list_store_sensor: gtk::ListStore,
+    list_store_sensor: gtk::ListStore,
     statusbar_application: gtk::Statusbar,
     statusbar_contexts: HashMap<StatusContext, u32>,
     // toggle_button_connect_toggle_signal: glib::SignalHandlerId,
@@ -97,6 +96,7 @@ fn ui_init(app: &gtk::Application) {
     // Sensor Working Mode selector
     let combo_box_text_sensor_working_mode: gtk::ComboBoxText =
         build!(builder, "combo_box_text_sensor_working_mode");
+    #[allow(unused_assignments)]
     let mut combo_box_text_sensor_working_mode_map = HashMap::new();
     combo_box_text_sensor_working_mode_map = [
         ("Unkonfiguriert".to_string(), 0),
@@ -132,7 +132,7 @@ fn ui_init(app: &gtk::Application) {
     let button_new_modbus_address: gtk::Button = build!(builder, "button_new_modbus_address");
 
     // ListStore Sensor Values
-    let _list_store_sensor: gtk::ListStore = build!(builder, "list_store_sensor");
+    let list_store_sensor: gtk::ListStore = build!(builder, "list_store_sensor");
 
     // Connect button, disabled if no ports available
     let toggle_button_connect: gtk::ToggleButton = build!(builder, "toggle_button_connect");
@@ -158,13 +158,17 @@ fn ui_init(app: &gtk::Application) {
         .load_from_path("resources/style.css")
         .expect("Failed to load CSS stylesheet");
 
+    //
     // Callbacks
-    let combo_box_text_ports_changed_signal = combo_box_text_ports.connect_changed(clone!(
-    @strong combo_box_text_ports,
-    @strong tokio_thread_sender
-    => move |_| {
+    //
 
-    }));
+    // let combo_box_text_ports_changed_signal = combo_box_text_ports.connect_changed(clone!(
+    // @strong combo_box_text_ports,
+    // @strong tokio_thread_sender
+    // => move |_| {
+    //
+    // }));
+    let combo_box_text_ports_changed_signal = combo_box_text_ports.connect_changed(move |_| {});
 
     toggle_button_connect.connect_clicked(clone!(
             @strong combo_box_text_ports_map,
@@ -215,7 +219,7 @@ fn ui_init(app: &gtk::Application) {
         @strong entry_modbus_address,
         @strong entry_new_modbus_address,
         @strong tokio_thread_sender
-        => move |s| {
+        => move |_| {
             let active_port = combo_box_text_ports.get_active().unwrap_or(0);
             let mut port = None;
             for (p, i) in &combo_box_text_ports_map {
@@ -278,7 +282,8 @@ fn ui_init(app: &gtk::Application) {
                 .expect("Faild to send tokio command");
     }));
 
-    button_reset.connect_clicked(clone!(@strong entry_modbus_address => move |_| {
+    button_reset.connect_clicked(clone!(
+        @strong entry_modbus_address => move |_| {
         entry_modbus_address.set_text("247");
     }));
 
@@ -287,7 +292,6 @@ fn ui_init(app: &gtk::Application) {
         @strong combo_box_text_ports_map,
         @strong combo_box_text_ports,
         @strong combo_box_text_sensor_working_mode,
-        @strong combo_box_text_sensor_working_mode_map,
         @strong tokio_thread_sender => move |_| {
             let active_port = combo_box_text_ports.get_active().unwrap_or(0);
             let mut port = None;
@@ -309,18 +313,18 @@ fn ui_init(app: &gtk::Application) {
     // Zugriff auf die Elemente der UI
     let mut ui = Ui {
         // application_window: application_window.clone(),
-        button_messgas,
-        button_nullpunkt,
+        // button_messgas,
+        // button_nullpunkt,
         button_reset,
         combo_box_text_ports_changed_signal,
         combo_box_text_ports_map,
         combo_box_text_ports,
-        combo_box_text_sensor_working_mode_map,
+        // combo_box_text_sensor_working_mode_map,
         combo_box_text_sensor_working_mode,
         entry_modbus_address,
         label_sensor_type_value_value,
         label_sensor_type_value,
-        // list_store_sensor,
+        list_store_sensor,
         statusbar_application,
         statusbar_contexts: context_map,
         // toggle_button_connect_toggle_signal,
@@ -385,6 +389,7 @@ fn ui_init(app: &gtk::Application) {
                         //     &format!("Disconnect"),
                         // );
                     }
+                    // FIXME: kann weg
                     UiCommand::UpdateSensorType(text) => {
                         info!("Execute event UiCommand::UpdateSensorType");
                         &ui.label_sensor_type_value.set_text(&text);
@@ -440,6 +445,7 @@ fn ui_init(app: &gtk::Application) {
                             ),
                         );
                     }
+                    // FIXME: kann weg
                     UiCommand::UpdateSensorValue(value) => {
                         info!("Execute event UiCommand::UpdateSensorValue");
                         let value = format!("{}", value);
@@ -457,11 +463,31 @@ fn ui_init(app: &gtk::Application) {
                             .set_active_id(Some(&values[1].to_string()));
                         &ui.label_sensor_type_value_value
                             .set_text(&values[2].to_string());
-                        // log_status(
-                        //     &ui,
-                        //     StatusContext::PortOperation,
-                        //     &format!("Update Sensor Values: {:?}", &values),
-                        // );
+                        let iter = &ui.list_store_sensor.get_iter_first().unwrap();
+                        let _: Vec<u32> = values
+                            .iter()
+                            .enumerate()
+                            .map(|(i, val)| {
+                                let reg = &ui
+                                    .list_store_sensor
+                                    .get_value(&iter, 0)
+                                    .get::<u32>()
+                                    .unwrap_or(Some(0))
+                                    .unwrap_or(0);
+                                // create the glib::value::Value from a u16 this is complicated (see supported types: https://gtk-rs.org/docs/glib/value/index.html)
+                                let val = (*val as u32).to_value();
+                                if i as u32 == *reg {
+                                    &ui.list_store_sensor.set_value(&iter, 1, &val);
+                                    &ui.list_store_sensor.iter_next(&iter);
+                                }
+                                0
+                            })
+                            .collect();
+                        log_status(
+                            &ui,
+                            StatusContext::PortOperation,
+                            &format!("Sensor Update OK"),
+                        );
                     }
                     UiCommand::NewModbusAddress(value) => {
                         log_status(
