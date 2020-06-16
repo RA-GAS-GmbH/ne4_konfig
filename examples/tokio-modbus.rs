@@ -1,5 +1,3 @@
-use std::thread;
-use tokio::runtime::Runtime;
 use tokio_modbus::prelude::*;
 use tokio_serial::{Serial, SerialPortSettings};
 
