@@ -471,6 +471,7 @@ fn ui_init(app: &gtk::Application) {
                     }
                     UiCommand::UpdateSensorValues(values) => {
                         info!("Execute event UiCommand::UpdateSensorValues");
+                        debug!("{:?}", values);
                         let values = values.unwrap();
                         &ui.combo_box_text_sensor_working_mode
                             .set_active_id(Some(&values[1].to_string()));
