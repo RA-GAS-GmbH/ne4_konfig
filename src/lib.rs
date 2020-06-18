@@ -6,7 +6,6 @@ pub mod gui {
 }
 
 pub mod sensors {
-    pub mod ne4;
     pub mod ra_gas_ne4;
 }
 

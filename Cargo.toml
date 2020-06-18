@@ -15,23 +15,23 @@ maintenance = { status = "actively-developed" }
 
 [dependencies]
 chrono = "0.4.11"
-env_logger = "0.7.1"
 futures = "0.3.5"
 gdk = "0.12.1"
 glib = "0.9.3"
 log = "0.4.8"
+mio-serial = "3.3.1"
+pretty_env_logger = "0.4.0"
 serde = "1.0.110"
 tokio-modbus = "0.4.0"
 # I need port enumeration, so I've patched tokio-serial.
 tokio-serial = { git = "https://github.com/zzeroo/tokio-serial.git", branch = "feature/port_enumeration" }
-mio-serial = "3.3.1"
 
 [dependencies.gtk]
 version = "0.8.1"
 features = ["v3_20", "embed-lgpl-docs"]
 
 [dependencies.gio]
-version = ""
+version = "0.8.1"
 features = ["v2_44"]
 
 [dependencies.tokio]

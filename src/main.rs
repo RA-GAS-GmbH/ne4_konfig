@@ -4,7 +4,7 @@ use ne4_konfig;
 extern crate log;
 
 fn main() {
-    env_logger::init();
+    pretty_env_logger::init();
 
     info!("Launch GUI");
     ne4_konfig::gui::gtk3::launch();

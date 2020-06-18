@@ -82,7 +82,6 @@ fn ui_init(app: &gtk::Application) {
     let glade_str = include_str!("main.ui");
     let builder = gtk::Builder::new_from_string(glade_str);
     let application_window: gtk::ApplicationWindow = build!(builder, "application_window");
-    let _combo_box_text_ports: gtk::ComboBoxText = build!(builder, "combo_box_text_ports");
     // Statusbar
     let statusbar_application: gtk::Statusbar = build!(builder, "statusbar_application");
     let context_id_port_ops = statusbar_application.get_context_id("port operations");
@@ -471,6 +470,7 @@ fn ui_init(app: &gtk::Application) {
                     }
                     UiCommand::UpdateSensorValues(values) => {
                         info!("Execute event UiCommand::UpdateSensorValues");
+                        debug!("{:?}", values);
                         let values = values.unwrap();
                         &ui.combo_box_text_sensor_working_mode
                             .set_active_id(Some(&values[1].to_string()));
