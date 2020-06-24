@@ -7,14 +7,6 @@ readme = "README.md"
 repository = "https://gitlab.com/RA-GAS-GmbH/ne4_konfig"
 description = "GUI für die Konfiguration der 'NE4-MOD-BUS' Sensoren"
 edition = "2018"
-build = "build.rs"
-
-[package.metadata.winres]
-OriginalFilename = "ne4_konfig.exe"
-FileDescription = "GUI für die Konfiguration der 'NE4-MOD-BUS' Sensoren"
-ProductName = "NE4-MOD-BUS"
-ProductVersion = "1"
-LegalCopyright = "Copyright © 2020"
 
 [badges]
 appveyor = { repository = "zzeroo/ne4-konfig", service = "gitlab" }
@@ -45,6 +37,3 @@ features = ["v2_44"]
 [dependencies.tokio]
 version = "0.2.20"
 features = ["full"]
-
-[target.'cfg(windows)'.build-dependencies]
-winres = "0.1"

@@ -95,12 +95,12 @@ Section "NE4 Konfig" SecNE4
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 
   ; Desktop symbols
-  CreateShortcut "$DESKTOP\NE4 Konfig${NAMESUFFIX}.lnk" "$INSTDIR\ne4_konfig.exe"
+  CreateShortcut "$DESKTOP\NE4 Konfig${NAMESUFFIX}.lnk" "$INSTDIR\ne4_konfig.exe" "" "$INSTDIR\resources\ne4_konfig.ico" 0
 
   ; Start menu
   CreateDirectory "$SMPROGRAMS\RA-GAS GmbH"
   CreateShortcut "$SMPROGRAMS\RA-GAS GmbH\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
-  CreateShortcut "$SMPROGRAMS\RA-GAS GmbH\ne4_konfig.lnk" "$INSTDIR\ne4_konfig.exe" "" "$INSTDIR\ne4_konfig.exe" 0
+  CreateShortcut "$SMPROGRAMS\RA-GAS GmbH\ne4_konfig.lnk" "$INSTDIR\ne4_konfig.exe" "" "$INSTDIR\resources\ne4_konfig.ico" 0
 
 SectionEnd
 
