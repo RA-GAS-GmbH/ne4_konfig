@@ -1,9 +1,16 @@
+
+#[cfg(windows)]
 extern crate winres;
 
+#[cfg(windows)]
 fn main() {
-  if cfg!(target_os = "windows") {
+    use std::path::Path;
     let mut res = winres::WindowsResource::new();
-    res.set_icon("ne4_konfig.ico");
+    let icon_path = Path::new("resources").join("ne4_konfig.ico").display().to_string();
+    res.set_icon(&icon_path);
     res.compile().unwrap();
-  }
+}
+
+#[cfg(unix)]
+fn main() {
 }
