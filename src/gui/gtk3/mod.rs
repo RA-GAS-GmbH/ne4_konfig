@@ -144,6 +144,8 @@ fn ui_init(app: &gtk::Application) {
 
     let label_sensor_ma_value: gtk::Label = build!(builder, "label_sensor_ma_value");
 
+    let menu_item_quit: gtk::MenuItem = build!(builder, "menu_item_quit");
+
     application_window.set_application(Some(app));
 
     // Set CSS styles for the entire application.
@@ -310,6 +312,12 @@ fn ui_init(app: &gtk::Application) {
                 .try_send(TokioCommand::NewWorkingMode(port, modbus_address.to_owned().parse().unwrap_or(0), working_mode.to_owned().parse().unwrap_or(0)))
                 .expect("Faild to send tokio command");
     }));
+
+    menu_item_quit.connect_activate(clone!(
+        @weak application_window => move |_| {
+            application_window.destroy()
+        }
+    ));
 
     // Zugriff auf die Elemente der UI
     let mut ui = Ui {
