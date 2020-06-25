@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - 4-20mA Anzeige in der Sensoransicht
+- NSIS Installer für 32/64Bit Windows Versionen
 ## Changed
 - Release Anweisungen präzisiert
 - Screenshots in README aufgenommen
