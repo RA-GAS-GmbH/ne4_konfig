@@ -664,7 +664,6 @@ dependencies = [
  "tokio",
  "tokio-modbus",
  "tokio-serial 4.3.3 (git+https://github.com/zzeroo/tokio-serial.git?branch=feature/port_enumeration)",
- "winapi 0.2.8",
 ]
 
 [[package]]
