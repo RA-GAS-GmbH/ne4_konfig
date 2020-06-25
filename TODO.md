@@ -6,4 +6,3 @@
 - Icons der Buttons (Stock Icons) werden unter Windows nicht dargestellt
 - Programm Symbol entwerfen
 - About Dialog
-
