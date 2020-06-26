@@ -277,7 +277,7 @@ pub mod modbus_client {
 extern crate log;
 
 fn main() {
-    env_logger::init();
+    pretty_env_logger::init();
 
     info!("Launch GUI");
     gui::gtk3::launch();

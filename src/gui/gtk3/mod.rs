@@ -11,23 +11,30 @@ use std::collections::HashMap;
 #[macro_use]
 pub mod macros;
 
+const PKG_VERSION: &'static str = env!("CARGO_PKG_VERSION");
+const PKG_NAME: &'static str = env!("CARGO_PKG_NAME");
+const PKG_DESCRIPTION: &'static str = env!("CARGO_PKG_DESCRIPTION");
+
 pub struct Ui {
     // application_window: gtk::ApplicationWindow,
-    // button_messgas: gtk::Button,
-    // button_nullpunkt: gtk::Button,
+    // combo_box_text_sensor_working_mode_map: HashMap<String, u16>,
+    // toggle_button_connect_toggle_signal: glib::SignalHandlerId,
+    button_messgas: gtk::Button,
+    button_new_modbus_address: gtk::Button,
+    button_nullpunkt: gtk::Button,
     button_reset: gtk::Button,
+    button_sensor_working_mode: gtk::Button,
     combo_box_text_ports_changed_signal: glib::SignalHandlerId,
     combo_box_text_ports_map: HashMap<String, u32>,
     combo_box_text_ports: gtk::ComboBoxText,
-    // combo_box_text_sensor_working_mode_map: HashMap<String, u16>,
     combo_box_text_sensor_working_mode: gtk::ComboBoxText,
     entry_modbus_address: gtk::Entry,
-    label_sensor_type_value_value: gtk::Label,
+    label_sensor_ma_value: gtk::Label,
     label_sensor_type_value: gtk::Label,
+    label_sensor_value_value: gtk::Label,
     list_store_sensor: gtk::ListStore,
     statusbar_application: gtk::Statusbar,
     statusbar_contexts: HashMap<StatusContext, u32>,
-    // toggle_button_connect_toggle_signal: glib::SignalHandlerId,
     toggle_button_connect: gtk::ToggleButton,
 }
 
@@ -79,7 +86,6 @@ fn ui_init(app: &gtk::Application) {
     let glade_str = include_str!("main.ui");
     let builder = gtk::Builder::new_from_string(glade_str);
     let application_window: gtk::ApplicationWindow = build!(builder, "application_window");
-    let _combo_box_text_ports: gtk::ComboBoxText = build!(builder, "combo_box_text_ports");
     // Statusbar
     let statusbar_application: gtk::Statusbar = build!(builder, "statusbar_application");
     let context_id_port_ops = statusbar_application.get_context_id("port operations");
@@ -116,8 +122,6 @@ fn ui_init(app: &gtk::Application) {
         combo_box_text_sensor_working_mode.append(Some(&id.to_string()), &name);
     }
 
-    let button_sensor_working_mode: gtk::Button = build!(builder, "button_sensor_working_mode");
-
     // Modbus Adresse
     let entry_modbus_address: gtk::Entry = build!(builder, "entry_modbus_address");
     let entry_new_modbus_address: gtk::Entry = build!(builder, "entry_new_modbus_address");
@@ -128,8 +132,8 @@ fn ui_init(app: &gtk::Application) {
     let label_sensor_type_value: gtk::Label = build!(builder, "label_sensor_type_value");
     let button_nullpunkt: gtk::Button = build!(builder, "button_nullpunkt");
     let button_messgas: gtk::Button = build!(builder, "button_messgas");
-
     let button_new_modbus_address: gtk::Button = build!(builder, "button_new_modbus_address");
+    let button_sensor_working_mode: gtk::Button = build!(builder, "button_sensor_working_mode");
 
     // ListStore Sensor Values
     let list_store_sensor: gtk::ListStore = build!(builder, "list_store_sensor");
@@ -140,8 +144,23 @@ fn ui_init(app: &gtk::Application) {
         toggle_button_connect.set_sensitive(false);
     }
 
-    let label_sensor_type_value_value: gtk::Label =
-        build!(builder, "label_sensor_type_value_value");
+    let label_sensor_value_value: gtk::Label = build!(builder, "label_sensor_value_value");
+
+    let label_sensor_ma_value: gtk::Label = build!(builder, "label_sensor_ma_value");
+
+    let menu_item_quit: gtk::MenuItem = build!(builder, "menu_item_quit");
+    let menu_item_about: gtk::MenuItem = build!(builder, "menu_item_about");
+
+    let header_bar: gtk::HeaderBar = build!(builder, "header_bar");
+    let about_dialog: gtk::AboutDialog = build!(builder, "about_dialog");
+    let about_dialog_button_ok: gtk::Button = build!(builder, "about_dialog_button_ok");
+
+    header_bar.set_title(Some(PKG_NAME));
+    header_bar.set_subtitle(Some(PKG_VERSION));
+
+    about_dialog.set_program_name(PKG_NAME);
+    about_dialog.set_version(Some(PKG_VERSION));
+    about_dialog.set_comments(Some(PKG_DESCRIPTION));
 
     application_window.set_application(Some(app));
 
@@ -310,24 +329,45 @@ fn ui_init(app: &gtk::Application) {
                 .expect("Faild to send tokio command");
     }));
 
+    menu_item_quit.connect_activate(clone!(
+        @weak application_window => move |_| {
+            application_window.destroy()
+        }
+    ));
+
+    menu_item_about.connect_activate(clone!(
+        @strong about_dialog => move |_| {
+            about_dialog.show()
+        }
+    ));
+
+    about_dialog_button_ok.connect_clicked(clone!(
+        @strong about_dialog => move |_| {
+            about_dialog.hide()
+        }
+    ));
+
     // Zugriff auf die Elemente der UI
     let mut ui = Ui {
         // application_window: application_window.clone(),
-        // button_messgas,
-        // button_nullpunkt,
+        // combo_box_text_sensor_working_mode_map,
+        // toggle_button_connect_toggle_signal,
+        button_messgas,
+        button_new_modbus_address,
+        button_nullpunkt,
         button_reset,
+        button_sensor_working_mode,
         combo_box_text_ports_changed_signal,
         combo_box_text_ports_map,
         combo_box_text_ports,
-        // combo_box_text_sensor_working_mode_map,
         combo_box_text_sensor_working_mode,
         entry_modbus_address,
-        label_sensor_type_value_value,
+        label_sensor_ma_value,
         label_sensor_type_value,
+        label_sensor_value_value,
         list_store_sensor,
         statusbar_application,
         statusbar_contexts: context_map,
-        // toggle_button_connect_toggle_signal,
         toggle_button_connect,
     };
 
@@ -350,6 +390,10 @@ fn ui_init(app: &gtk::Application) {
                         &ui.button_reset.set_sensitive(false);
                         &ui.label_sensor_type_value
                             .set_text("RA-GAS GmbH - NE4_MOD_BUS");
+                        &ui.button_nullpunkt.set_sensitive(false);
+                        &ui.button_messgas.set_sensitive(false);
+                        &ui.button_new_modbus_address.set_sensitive(false);
+                        &ui.button_sensor_working_mode.set_sensitive(false);
                         // log_status(
                         //     &ui,
                         //     StatusContext::PortOperation,
@@ -365,6 +409,10 @@ fn ui_init(app: &gtk::Application) {
                         &ui.entry_modbus_address.set_sensitive(true);
                         &ui.button_reset.set_sensitive(true);
                         &ui.label_sensor_type_value.set_text("");
+                        &ui.button_nullpunkt.set_sensitive(true);
+                        &ui.button_messgas.set_sensitive(true);
+                        &ui.button_new_modbus_address.set_sensitive(true);
+                        &ui.button_sensor_working_mode.set_sensitive(true);
                         // log_status(
                         //     &ui,
                         //     StatusContext::PortOperation,
@@ -449,7 +497,7 @@ fn ui_init(app: &gtk::Application) {
                     UiCommand::UpdateSensorValue(value) => {
                         info!("Execute event UiCommand::UpdateSensorValue");
                         let value = format!("{}", value);
-                        &ui.label_sensor_type_value_value.set_text(&value);
+                        &ui.label_sensor_value_value.set_text(&value);
                         // log_status(
                         //     &ui,
                         //     StatusContext::PortOperation,
@@ -458,11 +506,14 @@ fn ui_init(app: &gtk::Application) {
                     }
                     UiCommand::UpdateSensorValues(values) => {
                         info!("Execute event UiCommand::UpdateSensorValues");
+                        debug!("{:?}", values);
                         let values = values.unwrap();
                         &ui.combo_box_text_sensor_working_mode
                             .set_active_id(Some(&values[1].to_string()));
-                        &ui.label_sensor_type_value_value
-                            .set_text(&values[2].to_string());
+                        &ui.label_sensor_value_value.set_text(&values[2].to_string());
+                        let sensor_ma: f32 = values[3] as f32 / 100.0;
+                        let sensor_ma = format!("{:.02}", sensor_ma);
+                        &ui.label_sensor_ma_value.set_text(&sensor_ma);
                         let iter = &ui.list_store_sensor.get_iter_first().unwrap();
                         let _: Vec<u32> = values
                             .iter()
@@ -483,6 +534,7 @@ fn ui_init(app: &gtk::Application) {
                                 0
                             })
                             .collect();
+                        // Status log
                         log_status(
                             &ui,
                             StatusContext::PortOperation,

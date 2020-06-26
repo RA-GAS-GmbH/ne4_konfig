@@ -262,7 +262,7 @@ async fn read_registers(
 
             for (i, reg) in registers.iter_mut().enumerate() {
                 match timeout(
-                    Duration::from_millis(2000),
+                    Duration::from_millis(3000),
                     ctx.read_input_registers(i as u16, 1),
                 )
                 .await
@@ -288,7 +288,7 @@ async fn read_registers(
                             break 'update;
                         }
                     },
-                    Err(e) => {
+                    Err(_) => {
                         ui_event_sender
                             .clone()
                             .send(UiCommand::Disconnect)
@@ -298,8 +298,7 @@ async fn read_registers(
                         ui_event_sender
                             .clone()
                             .send(UiCommand::Error(format!(
-                                "Timeout beim lesen aller Register des Sensors: {}",
-                                e.to_string()
+                                "Timeout beim lesen aller Register"
                             )))
                             .await
                             .expect("Failed to send Ui command");
