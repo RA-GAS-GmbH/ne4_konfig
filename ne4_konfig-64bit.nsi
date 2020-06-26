@@ -101,9 +101,10 @@ SectionEnd
 ;Uninstaller Section
 
 Section "Uninstall"
-
-  ;ADD YOUR OWN FILES HERE...
-
+  Delete "$INSTDIR\resources\*.*"
+  RMDIR "$INSTDIR\resources"
+  Delete "$INSTDIR\share\*.*"
+  RMDIR "$INSTDIR\share"
   Delete "$INSTDIR\Uninstall.exe"
 
   ; Remove shortcuts
@@ -112,6 +113,8 @@ Section "Uninstall"
 
   ; Remove directories used
   RMDir "$SMPROGRAMS\RA-GAS GmbH"
+
+  Delete "$INSTDIR\*.*"
   RMDir "$INSTDIR"
 
   DeleteRegKey /ifempty HKCU "Software\RA-GAS GmbH\ne4_konfig"
