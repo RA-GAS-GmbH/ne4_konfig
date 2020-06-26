@@ -20,7 +20,8 @@
   Versionskontrolle aufgenommen werden `git commit -a -m "Finaler Commit vor Release"`
 - [] `git tag vN.N.N` Version getagged?
 - [] `git push --tags` Taggs veröffentlicht?
-- [] `git push` Branch ins remote Repo pushen
+- [] `git push github` Branch ins github backup Repo pushen
+- [] `git push origin` Branch ins gitlab Repo pushen
 - CI überprüft?
   - [] https://gitlab.com/RA-GAS-GmbH/ne4_konfig/pipelines Ok?
 - [] `git checkout master` wechsele in den *master* Branch
@@ -30,7 +31,8 @@
 
 ## Release packen
 ## Windows Binaries (32 und 64Bit gemeinsam)
-- [] `docker start -ai ne4_konfig-build` Windows Binaries gebilded
-- [] `mv package-windows-i686.zip $(cargo pkgid | cut -d# -f1 | cut -d\/ -f7)-$(cargo pkgid | cut -d# -f2)-windows-i686.zip`
-- [] `mv package-windows-x86_64.zip $(cargo pkgid | cut -d# -f1 | cut -d\/ -f7)-$(cargo pkgid | cut -d# -f2)-windows-x86_64.zip`
-- [] `rm package* -rf` Cleanup?
+- [] `docker start -ai ne4_konfig-build > build.log 2> build.error.log` Windows Binaries gebilded
+- [] `build.log` und `build.error.log` überprüft? Keine Fehler vorhanden
+- Cleanup
+  - [] `rm package* -rf`
+  - [] `rm build.log build.error.log`
