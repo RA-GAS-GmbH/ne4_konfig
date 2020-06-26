@@ -102,9 +102,9 @@ SectionEnd
 
 Section "Uninstall"
   Delete "$INSTDIR\resources\*.*"
-  RMDIR "$INSTDIR\resources"
+  RMDIR /r "$INSTDIR\resources"
   Delete "$INSTDIR\share\*.*"
-  RMDIR "$INSTDIR\share"
+  RMDIR /r "$INSTDIR\share"
   Delete "$INSTDIR\Uninstall.exe"
 
   ; Remove shortcuts
