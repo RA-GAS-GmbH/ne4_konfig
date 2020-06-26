@@ -11,6 +11,10 @@ use std::collections::HashMap;
 #[macro_use]
 pub mod macros;
 
+const PKG_VERSION: &'static str = env!("CARGO_PKG_VERSION");
+const PKG_NAME: &'static str = env!("CARGO_PKG_NAME");
+const PKG_DESCRIPTION: &'static str = env!("CARGO_PKG_DESCRIPTION");
+
 pub struct Ui {
     // application_window: gtk::ApplicationWindow,
     // combo_box_text_sensor_working_mode_map: HashMap<String, u16>,
@@ -145,6 +149,18 @@ fn ui_init(app: &gtk::Application) {
     let label_sensor_ma_value: gtk::Label = build!(builder, "label_sensor_ma_value");
 
     let menu_item_quit: gtk::MenuItem = build!(builder, "menu_item_quit");
+    let menu_item_about: gtk::MenuItem = build!(builder, "menu_item_about");
+
+    let header_bar: gtk::HeaderBar = build!(builder, "header_bar");
+    let about_dialog: gtk::AboutDialog = build!(builder, "about_dialog");
+    let about_dialog_button_ok: gtk::Button = build!(builder, "about_dialog_button_ok");
+
+    header_bar.set_title(Some(PKG_NAME));
+    header_bar.set_subtitle(Some(PKG_VERSION));
+
+    about_dialog.set_program_name(PKG_NAME);
+    about_dialog.set_version(Some(PKG_VERSION));
+    about_dialog.set_comments(Some(PKG_DESCRIPTION));
 
     application_window.set_application(Some(app));
 
@@ -316,6 +332,18 @@ fn ui_init(app: &gtk::Application) {
     menu_item_quit.connect_activate(clone!(
         @weak application_window => move |_| {
             application_window.destroy()
+        }
+    ));
+
+    menu_item_about.connect_activate(clone!(
+        @strong about_dialog => move |_| {
+            about_dialog.show()
+        }
+    ));
+
+    about_dialog_button_ok.connect_clicked(clone!(
+        @strong about_dialog => move |_| {
+            about_dialog.hide()
         }
     ));
 

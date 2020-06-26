@@ -28,11 +28,19 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
   <!-- interface-description GUI f\303\274r die Konfiguration der 'NE4-MOD-BUS' Sensoren -->
   <!-- interface-copyright 2020 Stefan M\303\274ller for RA-GAS GmbH Kernen i.R. -->
   <!-- interface-authors Stefan M\303\274ller <s.mueller@zzeroo.com> -->
-  <object class="GtkDialog" id="dialog_about">
+  <object class="GtkAboutDialog" id="about_dialog">
     <property name="can_focus">False</property>
     <property name="modal">True</property>
+    <property name="default_width">320</property>
+    <property name="default_height">260</property>
     <property name="type_hint">dialog</property>
-    <property name="decorated">False</property>
+    <property name="copyright" translatable="yes">© 2020 Stefan Müller für RA-GAS GmbH</property>
+    <property name="website">https://gaswarnanlagen.com</property>
+    <property name="website_label" translatable="yes">RA-GAS GmbH</property>
+    <property name="authors">Stefan Müller &lt;s.mueller@zzeroo.com&gt;</property>
+    <property name="logo">resources/about.png</property>
+    <property name="license_type">gpl-3-0</property>
+    <signal name="delete-event" handler="gtk_true" swapped="no"/>
     <child internal-child="vbox">
       <object class="GtkBox">
         <property name="can_focus">False</property>
@@ -46,7 +54,17 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
               <placeholder/>
             </child>
             <child>
-              <placeholder/>
+              <object class="GtkButton" id="about_dialog_button_ok">
+                <property name="label" translatable="yes">Ok</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
             </child>
           </object>
           <packing>
@@ -56,54 +74,7 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
           </packing>
         </child>
         <child>
-          <object class="GtkBox">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="orientation">vertical</property>
-            <child>
-              <object class="GtkImage">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="pixbuf">../../../resources/ne4_konfig.ico</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkLabel" id="label_dialog_about_title">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">&lt;big&gt;NE4-MOD-BUS-Konfig&lt;/big&gt;</property>
-                <property name="use_markup">True</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkLabel" id="label_dialog_about_author">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Stefan Müller für &lt;a&gt;RA-GAS GmbH&lt;/a&gt;</property>
-                <property name="use_markup">True</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">2</property>
-              </packing>
-            </child>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">1</property>
-          </packing>
+          <placeholder/>
         </child>
       </object>
     </child>
@@ -222,7 +193,7 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
     <property name="visible">True</property>
     <property name="can_focus">False</property>
     <child>
-      <object class="GtkMenuItem" id="about">
+      <object class="GtkMenuItem" id="menu_item_about">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="label" translatable="yes">About ...</property>
@@ -755,8 +726,6 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
       <object class="GtkHeaderBar" id="header_bar">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="title" translatable="yes">NE4-MOD-BUS-Konfig</property>
-        <property name="subtitle" translatable="yes">v1.0.1</property>
         <property name="show_close_button">True</property>
         <child>
           <object class="GtkMenuButton" id="menu_button">

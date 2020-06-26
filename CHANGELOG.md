@@ -11,10 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - 4-20mA Anzeige in der Sensoransicht
 - NSIS Installer für 32/64Bit Windows Versionen
+- About Dialog mit Informationen zur Software
 ## Changed
 - Release Anweisungen präzisiert
 - Screenshots in README aufgenommen
-- Funktionen für Nullpunkt und Messgas Abgleich sind nichtmehr wärend der Live
+- Funktionen für Nullpunkt und Messgas Abgleich sind nicht mehr wärend der Live
     Ansicht aufrufbar
 - "erweiterte Ansicht" umbenannt,
     es werden nur noch die lesbaren Register angezeigt
