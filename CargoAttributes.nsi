@@ -5,9 +5,11 @@
 ;
 ; !makensis "CargoAttributes.nsi"
 ; !system "CargoAttributes.exe"
+; !system "CargoAttributes.sh"
 ; !include "CargoAttributes.txt"
 ; ; optional cleanup
 ; !delfile "CargoAttributes.exe"
+; !delfile "CargoAttributes.sh"
 ; !delfile "CargoAttributes.txt"
 !include "TextFunc.nsh"
 Unicode true
@@ -24,5 +26,12 @@ Section
   FileOpen $R0 "$EXEDIR\CargoAttributes.txt" w
     FileWrite $R0 '!define CARGO_PKG_NAME $R1$\r$\n'
     FileWrite $R0 '!define CARGO_PKG_VERSION $R2'
+  FileClose $R0
+
+  ### Write linux shell script
+  FileOpen $R0 "$EXEDIR\CargoAttributes.sh" w
+    FileWrite $R0 '#!/bin/sh$\r$\n'
+    FileWrite $R0 'echo $\'!define CARGO_PKG_NAME $R1$\' >> CargoAttributes.txt$\r$\n'
+    FileWrite $R0 'echo $\'!define CARGO_PKG_VERSION $R2$\' >> CargoAttributes.txt$\r$\n'
   FileClose $R0
 SectionEnd

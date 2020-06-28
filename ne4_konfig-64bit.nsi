@@ -3,9 +3,11 @@
 ; makensis.exe ne4_konfig-64bit.nsi
 !makensis "CargoAttributes.nsi"
 !system "CargoAttributes.exe"
+!system "CargoAttributes.sh"
 !include "CargoAttributes.txt"
 ; optional cleanup
 !delfile "CargoAttributes.exe"
+!delfile "CargoAttributes.sh"
 !delfile "CargoAttributes.txt"
 
 !include "MUI2.nsh"
