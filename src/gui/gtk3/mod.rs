@@ -162,8 +162,18 @@ fn ui_init(app: &gtk::Application) {
     about_dialog.set_version(Some(PKG_VERSION));
     about_dialog.set_comments(Some(PKG_DESCRIPTION));
 
+    // #[cfg(feature = "ra-gas")]
+    if cfg!(feature = "ra-gas") {
+        let hbox_new_modbus_address: gtk::Box = build!(builder, "hbox_new_modbus_address");
+        let check_button_mcs = gtk::CheckButton::new_with_label("MCS");
+        hbox_new_modbus_address.pack_end(&check_button_mcs, false, false, 0);
+        hbox_new_modbus_address.reorder_child(&check_button_mcs, 1);
+    }
+
     application_window.set_application(Some(app));
 
+    //
+    // CSS
     // Set CSS styles for the entire application.
     let css_provider = gtk::CssProvider::new();
     let display = gdk::Display::get_default().expect("Couldn't open default GDK display");
@@ -177,6 +187,9 @@ fn ui_init(app: &gtk::Application) {
         .load_from_path("resources/style.css")
         .expect("Failed to load CSS stylesheet");
 
+    css_provider
+        .load_from_path("resources/ra-gas.css")
+        .expect("Failed to load CSS stylesheet (ra-gas features)");
     //
     // Callbacks
     //

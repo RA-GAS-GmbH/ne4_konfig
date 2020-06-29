@@ -8,6 +8,11 @@ repository = "https://gitlab.com/RA-GAS-GmbH/ne4_konfig"
 description = "GUI für die Konfiguration der 'NE4-MOD-BUS' Sensoren"
 edition = "2018"
 
+[features]
+default = []
+# Internal version with more functions
+ra-gas = []
+
 [badges]
 appveyor = { repository = "zzeroo/ne4-konfig", service = "gitlab" }
 gitlab = { repository = "RA-GAS-GmbH/ne4_konfig" }
