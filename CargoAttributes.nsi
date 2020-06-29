@@ -27,11 +27,4 @@ Section
     FileWrite $R0 '!define CARGO_PKG_NAME $R1$\r$\n'
     FileWrite $R0 '!define CARGO_PKG_VERSION $R2'
   FileClose $R0
-
-  ### Write linux shell script
-  FileOpen $R0 "$EXEDIR\CargoAttributes.sh" w
-    FileWrite $R0 '#!/bin/sh$\r$\n'
-    FileWrite $R0 'echo $\'!define CARGO_PKG_NAME $R1$\' >> CargoAttributes.txt$\r$\n'
-    FileWrite $R0 'echo $\'!define CARGO_PKG_VERSION $R2$\' >> CargoAttributes.txt$\r$\n'
-  FileClose $R0
 SectionEnd
