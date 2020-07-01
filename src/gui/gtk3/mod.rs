@@ -10,6 +10,7 @@ use std::collections::HashMap;
 
 #[macro_use]
 pub mod macros;
+pub mod treestore_values;
 
 const PKG_VERSION: &'static str = env!("CARGO_PKG_VERSION");
 const PKG_NAME: &'static str = env!("CARGO_PKG_NAME");
@@ -156,9 +157,13 @@ fn ui_init(app: &gtk::Application) {
     let about_dialog_button_ok: gtk::Button = build!(builder, "about_dialog_button_ok");
 
     header_bar.set_title(Some(PKG_NAME));
+    #[cfg(feature = "ra-gas")]
+    header_bar.set_title(Some(&format!("{} - RA-GAS intern!", PKG_NAME)));
     header_bar.set_subtitle(Some(PKG_VERSION));
 
     about_dialog.set_program_name(PKG_NAME);
+    #[cfg(feature = "ra-gas")]
+    about_dialog.set_program_name(&format!("{} - RA-GAS intern!", PKG_NAME));
     about_dialog.set_version(Some(PKG_VERSION));
     about_dialog.set_comments(Some(PKG_DESCRIPTION));
 
@@ -186,7 +191,7 @@ fn ui_init(app: &gtk::Application) {
     css_provider
         .load_from_path("resources/style.css")
         .expect("Failed to load CSS stylesheet");
-
+    #[cfg(feature = "ra-gas")]
     css_provider
         .load_from_path("resources/ra-gas.css")
         .expect("Failed to load CSS stylesheet (ra-gas features)");

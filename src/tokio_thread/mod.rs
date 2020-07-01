@@ -1,4 +1,4 @@
-use crate::gui::gtk3::UiCommand;
+use super::gui::gtk3::UiCommand;
 use futures::channel::mpsc::*;
 use futures::prelude::*;
 use tokio::time::{timeout, Duration};

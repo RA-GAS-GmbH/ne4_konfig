@@ -1,6 +1,5 @@
 ; Installer definition for  ne4_konfig
 ; Written by Stefan Müller <co@zzeroo.com>
-; makensis.exe ne4_konfig-64bit.nsi
 !makensis "CargoAttributes.nsi"
 !system "CargoAttributes.exe"
 !system "wine CargoAttributes.exe"
@@ -16,17 +15,15 @@ SetCompressor /SOLID lzma
 
 ;--------------------------------
 ;Configuration
-; 64bit version
-!define BITS 32
-!define ARCH "i686"
+!define ARCH $%ARCH%
 
 !ifndef OUTFILE
-  !define OUTFILE "${CARGO_PKG_NAME}-${CARGO_PKG_VERSION}-windows-${BITS}bit-setup.exe"
+  !define OUTFILE "${CARGO_PKG_NAME}-${CARGO_PKG_VERSION}-windows-${ARCH}-setup.exe"
 !endif
 
 OutFile "${OUTFILE}"
 Name "NE4 Konfig"
-Caption "NE4 Konfig ${CARGO_PKG_VERSION} ${BITS}Bit Setup"
+Caption "NE4 Konfig ${CARGO_PKG_VERSION} ${ARCH} Setup"
 
 ;Default installation folder
 InstallDir "$PROGRAMFILES\RA-GAS GmbH\${CARGO_PKG_NAME}"
@@ -70,7 +67,7 @@ RequestExecutionLevel admin
 Section "NE4 Konfig" SecNE4
   SetOutPath "$INSTDIR"
 
-  File /r "${CARGO_PKG_NAME}-${CARGO_PKG_VERSION}-windows-${ARCH}\"
+  File /r "${CARGO_PKG_NAME}-${CARGO_PKG_VERSION}-windows-${ARCH}"
 
   ;Store installation folder
   WriteRegStr HKCU "Software\RA-GAS GmbH\${CARGO_PKG_NAME}" "" $INSTDIR
