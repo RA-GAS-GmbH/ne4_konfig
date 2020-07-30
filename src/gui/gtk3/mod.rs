@@ -103,6 +103,7 @@ fn ui_init(app: &gtk::Application) {
     // Sensor Working Mode selector
     let combo_box_text_sensor_working_mode: gtk::ComboBoxText =
         build!(builder, "combo_box_text_sensor_working_mode");
+    combo_box_text_sensor_working_mode.set_sensitive(false);
     #[allow(unused_assignments)]
     let mut combo_box_text_sensor_working_mode_map = HashMap::new();
     combo_box_text_sensor_working_mode_map = [
@@ -125,16 +126,22 @@ fn ui_init(app: &gtk::Application) {
 
     // Modbus Adresse
     let entry_modbus_address: gtk::Entry = build!(builder, "entry_modbus_address");
+    entry_modbus_address.set_sensitive(false);
     let entry_new_modbus_address: gtk::Entry = build!(builder, "entry_new_modbus_address");
+    entry_new_modbus_address.set_sensitive(false);
 
     // Reset Button
     let button_reset: gtk::Button = build!(builder, "button_reset");
     // Labels Sensor Werte
     let label_sensor_type_value: gtk::Label = build!(builder, "label_sensor_type_value");
     let button_nullpunkt: gtk::Button = build!(builder, "button_nullpunkt");
+    button_nullpunkt.set_sensitive(false);
     let button_messgas: gtk::Button = build!(builder, "button_messgas");
+    button_messgas.set_sensitive(false);
     let button_new_modbus_address: gtk::Button = build!(builder, "button_new_modbus_address");
+    button_new_modbus_address.set_sensitive(false);
     let button_sensor_working_mode: gtk::Button = build!(builder, "button_sensor_working_mode");
+    button_sensor_working_mode.set_sensitive(false);
 
     // ListStore Sensor Values
     let list_store_sensor: gtk::ListStore = build!(builder, "list_store_sensor");
