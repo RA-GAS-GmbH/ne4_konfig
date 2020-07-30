@@ -481,6 +481,7 @@ fn ui_init(app: &gtk::Application) {
                         if ports.is_empty() {
                             ui.combo_box_text_ports
                                 .append(None, "Keine Schnittstelle gefunden");
+                            ui.combo_box_text_ports.set_active(Some(0));
                             ui.combo_box_text_ports.set_sensitive(false);
                             ui.toggle_button_connect.set_sensitive(false);
                         } else {
@@ -488,10 +489,6 @@ fn ui_init(app: &gtk::Application) {
                                 ui.combo_box_text_ports.append(None, &p);
                                 ui.combo_box_text_ports_map.insert(p, i);
                             }
-                            ui.combo_box_text_ports.set_sensitive(true);
-                            ui.toggle_button_connect.set_sensitive(true);
-                        }
-                        if !ports.is_empty() {
                             signal_handler_block(
                                 &ui.combo_box_text_ports,
                                 &ui.combo_box_text_ports_changed_signal,
@@ -501,7 +498,10 @@ fn ui_init(app: &gtk::Application) {
                                 &ui.combo_box_text_ports,
                                 &ui.combo_box_text_ports_changed_signal,
                             );
+                            ui.combo_box_text_ports.set_sensitive(true);
+                            ui.toggle_button_connect.set_sensitive(true);
                         }
+
                         log_status(
                             &ui,
                             StatusContext::PortOperation,
