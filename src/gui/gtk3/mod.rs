@@ -407,18 +407,7 @@ fn ui_init(app: &gtk::Application) {
                 match event {
                     UiCommand::DisableConnectUiElements => {
                         info!("Execute event UiCommand::DisableConnectUiElements");
-                        // Disabel UI Elements ...
-                        &ui.toggle_button_connect.set_active(true);
-                        &ui.combo_box_text_ports.set_sensitive(false);
-                        &ui.combo_box_text_sensor_working_mode.set_sensitive(false);
-                        &ui.entry_modbus_address.set_sensitive(false);
-                        &ui.button_reset.set_sensitive(false);
-                        &ui.label_sensor_type_value
-                            .set_text("RA-GAS GmbH - NE4_MOD_BUS");
-                        &ui.button_nullpunkt.set_sensitive(false);
-                        &ui.button_messgas.set_sensitive(false);
-                        &ui.button_new_modbus_address.set_sensitive(false);
-                        &ui.button_sensor_working_mode.set_sensitive(false);
+                        disable_ui_elements(&ui);
                         // log_status(
                         //     &ui,
                         //     StatusContext::PortOperation,
@@ -427,17 +416,7 @@ fn ui_init(app: &gtk::Application) {
                     }
                     UiCommand::EnableConnectUiElements => {
                         info!("Execute event UiCommand::EnableConnectUiElements");
-                        // Disabel UI Elements ...
-                        &ui.toggle_button_connect.set_active(false);
-                        &ui.combo_box_text_ports.set_sensitive(true);
-                        &ui.combo_box_text_sensor_working_mode.set_sensitive(true);
-                        &ui.entry_modbus_address.set_sensitive(true);
-                        &ui.button_reset.set_sensitive(true);
-                        &ui.label_sensor_type_value.set_text("");
-                        &ui.button_nullpunkt.set_sensitive(true);
-                        &ui.button_messgas.set_sensitive(true);
-                        &ui.button_new_modbus_address.set_sensitive(true);
-                        &ui.button_sensor_working_mode.set_sensitive(true);
+                        enable_ui_elements(&ui);
                         // log_status(
                         //     &ui,
                         //     StatusContext::PortOperation,
@@ -486,12 +465,14 @@ fn ui_init(app: &gtk::Application) {
                         ui.combo_box_text_ports.remove_all();
                         ui.combo_box_text_ports_map.clear();
                         if ports.is_empty() {
+                            disable_ui_elements(&ui);
                             ui.combo_box_text_ports
                                 .append(None, "Keine Schnittstelle gefunden");
                             ui.combo_box_text_ports.set_active(Some(0));
                             ui.combo_box_text_ports.set_sensitive(false);
                             ui.toggle_button_connect.set_sensitive(false);
                         } else {
+                            enable_ui_elements(&ui);
                             for (i, p) in (0u32..).zip(ports.clone().into_iter()) {
                                 ui.combo_box_text_ports.append(None, &p);
                                 ui.combo_box_text_ports_map.insert(p, i);
@@ -601,6 +582,36 @@ fn ui_init(app: &gtk::Application) {
 
     let c = glib::MainContext::default();
     c.spawn_local(future);
+}
+
+fn enable_ui_elements(ui: &Ui) {
+    ui.toggle_button_connect.set_active(false);
+    ui.combo_box_text_ports.set_sensitive(true);
+    ui.combo_box_text_sensor_working_mode.set_sensitive(true);
+    ui.entry_modbus_address.set_sensitive(true);
+    ui.button_reset.set_sensitive(true);
+    // FIXME: Remove this hardcoded value
+    ui.label_sensor_type_value
+        .set_text("RA-GAS GmbH - NE4_MOD_BUS");
+    ui.button_nullpunkt.set_sensitive(true);
+    ui.button_messgas.set_sensitive(true);
+    ui.button_new_modbus_address.set_sensitive(true);
+    ui.button_sensor_working_mode.set_sensitive(true);
+}
+
+fn disable_ui_elements(ui: &Ui) {
+    // ui.toggle_button_connect.set_active(true);
+    ui.combo_box_text_ports.set_sensitive(false);
+    ui.combo_box_text_sensor_working_mode.set_sensitive(false);
+    ui.entry_modbus_address.set_sensitive(false);
+    ui.button_reset.set_sensitive(false);
+    // FIXME: Remove this hardcoded value
+    ui.label_sensor_type_value
+        .set_text("RA-GAS GmbH - NE4_MOD_BUS");
+    ui.button_nullpunkt.set_sensitive(false);
+    ui.button_messgas.set_sensitive(false);
+    ui.button_new_modbus_address.set_sensitive(false);
+    ui.button_sensor_working_mode.set_sensitive(false);
 }
 
 /// Log messages to the status bar using the specific status context.
