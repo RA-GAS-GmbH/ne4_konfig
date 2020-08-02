@@ -235,7 +235,7 @@ fn ui_init(app: &gtk::Application) {
                     info!("port: {:?}", &port);
 
                     // get modbus_address
-                    let modbus_address = entry_modbus_address.get_text().unwrap_or("0".into());
+                    let modbus_address = entry_modbus_address.get_text().unwrap_or("247".into());
                     info!("port: {:?}, modbus_address: {:?}", &port, &modbus_address);
 
                     tokio_thread_sender
@@ -245,7 +245,7 @@ fn ui_init(app: &gtk::Application) {
 
                     tokio_thread_sender
                         .clone()
-                        .try_send(TokioCommand::UpdateSensor(port, modbus_address.parse().unwrap()))
+                        .try_send(TokioCommand::UpdateSensor(port, modbus_address.parse().unwrap_or(247)))
                         .expect("Faild to send tokio command");
 
                 } else {
@@ -345,7 +345,7 @@ fn ui_init(app: &gtk::Application) {
                     break;
                 }
             }
-            let modbus_address = entry_modbus_address.get_text().unwrap_or("0".into());
+            let modbus_address = entry_modbus_address.get_text().unwrap_or("247".into());
             let working_mode = combo_box_text_sensor_working_mode.get_active_id().unwrap();
 
             tokio_thread_sender
