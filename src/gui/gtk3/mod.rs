@@ -6,7 +6,9 @@ use glib::clone;
 use glib::{signal_handler_block, signal_handler_unblock};
 use gtk::prelude::*;
 use gtk::Application;
+use std::cell::RefCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 #[macro_use]
 pub mod macros;
@@ -26,7 +28,7 @@ pub struct Ui {
     button_reset: gtk::Button,
     button_sensor_working_mode: gtk::Button,
     combo_box_text_ports_changed_signal: glib::SignalHandlerId,
-    combo_box_text_ports_map: HashMap<String, u32>,
+    combo_box_text_ports_map: Rc<RefCell<HashMap<String, u32>>>,
     combo_box_text_ports: gtk::ComboBoxText,
     combo_box_text_sensor_working_mode: gtk::ComboBoxText,
     entry_modbus_address: gtk::Entry,
@@ -373,7 +375,7 @@ fn ui_init(app: &gtk::Application) {
     ));
 
     // Zugriff auf die Elemente der UI
-    let mut ui = Ui {
+    let ui = Ui {
         // application_window: application_window.clone(),
         // combo_box_text_sensor_working_mode_map,
         // toggle_button_connect_toggle_signal,
@@ -383,7 +385,7 @@ fn ui_init(app: &gtk::Application) {
         button_reset,
         button_sensor_working_mode,
         combo_box_text_ports_changed_signal,
-        combo_box_text_ports_map,
+        combo_box_text_ports_map: Rc::new(RefCell::new(combo_box_text_ports_map)),
         combo_box_text_ports,
         combo_box_text_sensor_working_mode,
         entry_modbus_address,
@@ -463,7 +465,7 @@ fn ui_init(app: &gtk::Application) {
                         info!("Execute event UiCommand::UpdatePorts: {:?}", ports);
                         // Update the port listing and other UI elements
                         ui.combo_box_text_ports.remove_all();
-                        ui.combo_box_text_ports_map.clear();
+                        ui.combo_box_text_ports_map.borrow_mut().clear();
                         if ports.is_empty() {
                             disable_ui_elements(&ui);
                             ui.combo_box_text_ports
@@ -475,7 +477,7 @@ fn ui_init(app: &gtk::Application) {
                             enable_ui_elements(&ui);
                             for (i, p) in (0u32..).zip(ports.clone().into_iter()) {
                                 ui.combo_box_text_ports.append(None, &p);
-                                ui.combo_box_text_ports_map.insert(p, i);
+                                ui.combo_box_text_ports_map.borrow_mut().insert(p, i);
                             }
                             signal_handler_block(
                                 &ui.combo_box_text_ports,
@@ -495,7 +497,8 @@ fn ui_init(app: &gtk::Application) {
                             StatusContext::PortOperation,
                             &format!(
                                 "Ports found: {:?}; ports_map: {:?}",
-                                ports, &ui.combo_box_text_ports_map
+                                ports,
+                                &ui.combo_box_text_ports_map.borrow()
                             ),
                         );
                     }
