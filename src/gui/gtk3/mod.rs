@@ -44,6 +44,7 @@ pub struct Ui {
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 enum StatusContext {
     PortOperation,
+    Error,
 }
 
 #[derive(Debug)]
@@ -348,7 +349,7 @@ fn ui_init(app: &gtk::Application) {
                 }
             }
             let modbus_address = entry_modbus_address.get_text().unwrap_or("247".into());
-            let working_mode = combo_box_text_sensor_working_mode.get_active_id().unwrap();
+            let working_mode = combo_box_text_sensor_working_mode.get_active_id().unwrap_or("0".into());
 
             tokio_thread_sender
                 .clone()
@@ -516,39 +517,57 @@ fn ui_init(app: &gtk::Application) {
                     UiCommand::UpdateSensorValues(values) => {
                         info!("Execute event UiCommand::UpdateSensorValues");
                         debug!("{:?}", values);
-                        let values = values.unwrap();
-                        &ui.combo_box_text_sensor_working_mode
-                            .set_active_id(Some(&values[1].to_string()));
-                        &ui.label_sensor_value_value.set_text(&values[2].to_string());
-                        let sensor_ma: f32 = values[3] as f32 / 100.0;
-                        let sensor_ma = format!("{:.02}", sensor_ma);
-                        &ui.label_sensor_ma_value.set_text(&sensor_ma);
-                        let iter = &ui.list_store_sensor.get_iter_first().unwrap();
-                        let _: Vec<u32> = values
-                            .iter()
-                            .enumerate()
-                            .map(|(i, val)| {
-                                let reg = &ui
-                                    .list_store_sensor
-                                    .get_value(&iter, 0)
-                                    .get::<u32>()
-                                    .unwrap_or(Some(0))
-                                    .unwrap_or(0);
-                                // create the glib::value::Value from a u16 this is complicated (see supported types: https://gtk-rs.org/docs/glib/value/index.html)
-                                let val = (*val as u32).to_value();
-                                if i as u32 == *reg {
-                                    &ui.list_store_sensor.set_value(&iter, 1, &val);
-                                    &ui.list_store_sensor.iter_next(&iter);
+                        match values {
+                            Ok(values) => {
+                                &ui.combo_box_text_sensor_working_mode
+                                    .set_active_id(Some(&values[1].to_string()));
+                                &ui.label_sensor_value_value.set_text(&values[2].to_string());
+                                let sensor_ma: f32 = values[3] as f32 / 100.0;
+                                let sensor_ma = format!("{:.02}", sensor_ma);
+                                &ui.label_sensor_ma_value.set_text(&sensor_ma);
+                                if let Some(iter) = &ui.list_store_sensor.get_iter_first() {
+                                    let _: Vec<u32> = values
+                                        .iter()
+                                        .enumerate()
+                                        .map(|(i, val)| {
+                                            let reg = &ui
+                                                .list_store_sensor
+                                                .get_value(&iter, 0)
+                                                .get::<u32>()
+                                                .unwrap_or(Some(0))
+                                                .unwrap_or(0);
+                                            // create the glib::value::Value from a u16 this is complicated (see supported types: https://gtk-rs.org/docs/glib/value/index.html)
+                                            let val = (*val as u32).to_value();
+                                            if i as u32 == *reg {
+                                                &ui.list_store_sensor.set_value(&iter, 1, &val);
+                                                &ui.list_store_sensor.iter_next(&iter);
+                                            }
+                                            0
+                                        })
+                                        .collect();
+                                    // Status log
+                                    log_status(
+                                        &ui,
+                                        StatusContext::PortOperation,
+                                        &format!("Sensor Update OK"),
+                                    );
+                                } else {
+                                    log_status(
+                                        &ui,
+                                        StatusContext::Error,
+                                        &format!("Error while iterating Sensor list"),
+                                    );
                                 }
-                                0
-                            })
-                            .collect();
-                        // Status log
-                        log_status(
-                            &ui,
-                            StatusContext::PortOperation,
-                            &format!("Sensor Update OK"),
-                        );
+                            }
+                            Err(err) => {
+                                // Status log
+                                log_status(
+                                    &ui,
+                                    StatusContext::Error,
+                                    &format!("Error while Sensor Update: {}", err),
+                                );
+                            }
+                        }
                     }
                     UiCommand::NewModbusAddress(value) => {
                         log_status(
@@ -619,10 +638,12 @@ fn disable_ui_elements(ui: &Ui) {
 
 /// Log messages to the status bar using the specific status context.
 fn log_status(ui: &Ui, context: StatusContext, message: &str) {
-    let _context_id = ui.statusbar_contexts.get(&context).unwrap();
-    let timestamp = Utc::now().format("%Y-%m-%d %H:%M:%S");
-    let formatted_message = format!("[{}]: {}", timestamp, message);
-    ui.statusbar_application.push(0, &formatted_message);
+    if let Some(context_id) = ui.statusbar_contexts.get(&context) {
+        let timestamp = Utc::now().format("%Y-%m-%d %H:%M:%S");
+        let formatted_message = format!("[{}]: {}", timestamp, message);
+        ui.statusbar_application
+            .push(*context_id, &formatted_message);
+    }
 }
 
 fn scan_ports(
