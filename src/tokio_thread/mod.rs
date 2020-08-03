@@ -200,17 +200,24 @@ async fn new_working_mode(
     modbus_address: u8,
     working_mode: u16,
 ) -> tokio::io::Result<()> {
-    let tty_path = port.clone().unwrap_or("".into());
-    let slave = Slave(modbus_address);
-    let mut settings = SerialPortSettings::default();
-    settings.baud_rate = 9600;
-    let port = Serial::from_path(tty_path, &settings)?;
-    let mut ctx = rtu::connect_slave(port, slave).await?;
+    // let tty_path = port.clone().unwrap_or("".into());
+    if let Some(tty_path) = port {
+        let slave = Slave(modbus_address);
+        let mut settings = SerialPortSettings::default();
+        settings.baud_rate = 9600;
+        let port = Serial::from_path(tty_path, &settings)?;
+        let mut ctx = rtu::connect_slave(port, slave).await?;
 
-    // Entsperren
-    let _ = ctx.write_single_register(49, 9876).await;
-    // Arbeitsmode umstellen
-    ctx.write_single_register(99, working_mode).await
+        // Entsperren
+        let _ = ctx.write_single_register(49, 9876).await;
+        // Arbeitsmode umstellen
+        ctx.write_single_register(99, working_mode).await
+    } else {
+        Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "No serial port found",
+        ))
+    }
 }
 
 async fn new_modbus_address(
@@ -218,29 +225,43 @@ async fn new_modbus_address(
     modbus_address: u8,
     new_modbus_address: u8,
 ) -> tokio::io::Result<()> {
-    let tty_path = port.clone().unwrap_or("".into());
-    let slave = Slave(modbus_address);
-    let mut settings = SerialPortSettings::default();
-    settings.baud_rate = 9600;
-    let port = Serial::from_path(tty_path, &settings)?;
-    let mut ctx = rtu::connect_slave(port, slave).await?;
+    // let tty_path = port.clone().unwrap_or("".into());
+    if let Some(tty_path) = port {
+        let slave = Slave(modbus_address);
+        let mut settings = SerialPortSettings::default();
+        settings.baud_rate = 9600;
+        let port = Serial::from_path(tty_path, &settings)?;
+        let mut ctx = rtu::connect_slave(port, slave).await?;
 
-    // Entsperren
-    let _ = ctx.write_single_register(49, 9876).await;
-    // Arbeitsmode umstellen
-    ctx.write_single_register(50, new_modbus_address.into())
-        .await
+        // Entsperren
+        let _ = ctx.write_single_register(49, 9876).await;
+        // Arbeitsmode umstellen
+        ctx.write_single_register(50, new_modbus_address.into())
+            .await
+    } else {
+        Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "No serial port found",
+        ))
+    }
 }
 
 async fn messgas(port: Option<String>, modbus_address: u8) -> tokio::io::Result<()> {
-    let tty_path = port.clone().unwrap_or("".into());
-    let slave = Slave(modbus_address);
-    let mut settings = SerialPortSettings::default();
-    settings.baud_rate = 9600;
-    let port = Serial::from_path(tty_path, &settings)?;
-    let mut ctx = rtu::connect_slave(port, slave).await?;
+    // let tty_path = port.clone().unwrap_or("".into());
+    if let Some(tty_path) = port {
+        let slave = Slave(modbus_address);
+        let mut settings = SerialPortSettings::default();
+        settings.baud_rate = 9600;
+        let port = Serial::from_path(tty_path, &settings)?;
+        let mut ctx = rtu::connect_slave(port, slave).await?;
 
-    ctx.write_single_register(12, 11111).await
+        ctx.write_single_register(12, 11111).await
+    } else {
+        Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "No serial port found",
+        ))
+    }
 }
 
 async fn read_registers(
@@ -251,32 +272,51 @@ async fn read_registers(
 ) -> tokio::io::Result<()> {
     // TODO: Check if thread was alreaddy started
 
-    let tty_path = port.clone().unwrap_or("".into());
-    let slave = Slave(modbus_address);
-    let mut settings = SerialPortSettings::default();
-    settings.baud_rate = 9600;
-    let port = Serial::from_path(tty_path, &settings)?;
-    let mut ctx = rtu::connect_slave(port, slave).await?;
+    if let Some(tty_path) = port {
+        let slave = Slave(modbus_address);
+        let mut settings = SerialPortSettings::default();
+        settings.baud_rate = 9600;
+        let port = Serial::from_path(tty_path, &settings)?;
+        let mut ctx = rtu::connect_slave(port, slave).await?;
 
-    tokio::task::spawn(async move {
-        'update: loop {
-            let state = state.lock().await;
-            if *state == TokioState::Disconnected {
-                break;
-            }
+        tokio::task::spawn(async move {
+            'update: loop {
+                let state = state.lock().await;
+                if *state == TokioState::Disconnected {
+                    break;
+                }
 
-            let mut registers = vec![0u16; 50];
+                let mut registers = vec![0u16; 50];
 
-            for (i, reg) in registers.iter_mut().enumerate() {
-                match timeout(
-                    Duration::from_millis(3000),
-                    ctx.read_input_registers(i as u16, 1),
-                )
-                .await
-                {
-                    Ok(value) => match value {
-                        Ok(value) => *reg = value[0],
-                        Err(e) => {
+                for (i, reg) in registers.iter_mut().enumerate() {
+                    match timeout(
+                        Duration::from_millis(3000),
+                        ctx.read_input_registers(i as u16, 1),
+                    )
+                    .await
+                    {
+                        Ok(value) => match value {
+                            Ok(value) => *reg = value[0],
+                            Err(e) => {
+                                ui_event_sender
+                                    .clone()
+                                    .send(UiCommand::Disconnect)
+                                    .await
+                                    .expect("Failed to send Ui command");
+
+                                ui_event_sender
+                                    .clone()
+                                    .send(UiCommand::Error(format!(
+                                        "Register {} konnte nicht gelesen werden: {}",
+                                        i,
+                                        e.to_string()
+                                    )))
+                                    .await
+                                    .expect("Failed to send Ui command");
+                                break 'update;
+                            }
+                        },
+                        Err(_) => {
                             ui_event_sender
                                 .clone()
                                 .send(UiCommand::Disconnect)
@@ -286,41 +326,27 @@ async fn read_registers(
                             ui_event_sender
                                 .clone()
                                 .send(UiCommand::Error(format!(
-                                    "Register {} konnte nicht gelesen werden: {}",
-                                    i,
-                                    e.to_string()
+                                    "Timeout beim lesen aller Register"
                                 )))
                                 .await
                                 .expect("Failed to send Ui command");
                             break 'update;
                         }
-                    },
-                    Err(_) => {
-                        ui_event_sender
-                            .clone()
-                            .send(UiCommand::Disconnect)
-                            .await
-                            .expect("Failed to send Ui command");
-
-                        ui_event_sender
-                            .clone()
-                            .send(UiCommand::Error(format!(
-                                "Timeout beim lesen aller Register"
-                            )))
-                            .await
-                            .expect("Failed to send Ui command");
-                        break 'update;
-                    }
-                };
+                    };
+                }
+                ui_event_sender
+                    .clone()
+                    .send(UiCommand::UpdateSensorValues(Ok(registers)))
+                    .await
+                    .expect("Failed to send Ui command");
             }
-            ui_event_sender
-                .clone()
-                .send(UiCommand::UpdateSensorValues(Ok(registers)))
-                .await
-                .expect("Failed to send Ui command");
+        });
 
-            // delay_for(Duration::from_millis(1000)).await;
-        }
-    });
-    Ok(())
+        Ok(())
+    } else {
+        Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "No serial port found",
+        ))
+    }
 }
