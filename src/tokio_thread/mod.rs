@@ -178,14 +178,21 @@ pub fn scan_ports() -> Vec<String> {
 }
 
 async fn nullpunkt(port: Option<String>, modbus_address: u8) -> tokio::io::Result<()> {
-    let tty_path = port.clone().unwrap_or("".into());
-    let slave = Slave(modbus_address);
-    let mut settings = SerialPortSettings::default();
-    settings.baud_rate = 9600;
-    let port = Serial::from_path(tty_path, &settings).unwrap();
-    let mut ctx = rtu::connect_slave(port, slave).await.unwrap();
+    // let tty_path = port.clone().unwrap_or("".into());
+    if let Some(tty_path) = port {
+        let slave = Slave(modbus_address);
+        let mut settings = SerialPortSettings::default();
+        settings.baud_rate = 9600;
+        let port = Serial::from_path(tty_path, &settings)?;
+        let mut ctx = rtu::connect_slave(port, slave).await?;
 
-    ctx.write_single_register(10, 11111).await
+        ctx.write_single_register(10, 11111).await
+    } else {
+        Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "No serial port found",
+        ))
+    }
 }
 
 async fn new_working_mode(
@@ -197,8 +204,8 @@ async fn new_working_mode(
     let slave = Slave(modbus_address);
     let mut settings = SerialPortSettings::default();
     settings.baud_rate = 9600;
-    let port = Serial::from_path(tty_path, &settings).unwrap();
-    let mut ctx = rtu::connect_slave(port, slave).await.unwrap();
+    let port = Serial::from_path(tty_path, &settings)?;
+    let mut ctx = rtu::connect_slave(port, slave).await?;
 
     // Entsperren
     let _ = ctx.write_single_register(49, 9876).await;
@@ -215,8 +222,8 @@ async fn new_modbus_address(
     let slave = Slave(modbus_address);
     let mut settings = SerialPortSettings::default();
     settings.baud_rate = 9600;
-    let port = Serial::from_path(tty_path, &settings).unwrap();
-    let mut ctx = rtu::connect_slave(port, slave).await.unwrap();
+    let port = Serial::from_path(tty_path, &settings)?;
+    let mut ctx = rtu::connect_slave(port, slave).await?;
 
     // Entsperren
     let _ = ctx.write_single_register(49, 9876).await;
@@ -230,8 +237,8 @@ async fn messgas(port: Option<String>, modbus_address: u8) -> tokio::io::Result<
     let slave = Slave(modbus_address);
     let mut settings = SerialPortSettings::default();
     settings.baud_rate = 9600;
-    let port = Serial::from_path(tty_path, &settings).unwrap();
-    let mut ctx = rtu::connect_slave(port, slave).await.unwrap();
+    let port = Serial::from_path(tty_path, &settings)?;
+    let mut ctx = rtu::connect_slave(port, slave).await?;
 
     ctx.write_single_register(12, 11111).await
 }
@@ -248,8 +255,8 @@ async fn read_registers(
     let slave = Slave(modbus_address);
     let mut settings = SerialPortSettings::default();
     settings.baud_rate = 9600;
-    let port = Serial::from_path(tty_path, &settings).unwrap();
-    let mut ctx = rtu::connect_slave(port, slave).await.unwrap();
+    let port = Serial::from_path(tty_path, &settings)?;
+    let mut ctx = rtu::connect_slave(port, slave).await?;
 
     tokio::task::spawn(async move {
         'update: loop {
