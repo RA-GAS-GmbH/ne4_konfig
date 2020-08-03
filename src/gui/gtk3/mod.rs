@@ -27,6 +27,7 @@ pub struct Ui {
     button_nullpunkt: gtk::Button,
     button_reset: gtk::Button,
     button_sensor_working_mode: gtk::Button,
+    check_button_mcs: Option<gtk::CheckButton>,
     combo_box_text_ports_changed_signal: glib::SignalHandlerId,
     combo_box_text_ports_map: Rc<RefCell<HashMap<String, u32>>>,
     combo_box_text_ports: gtk::ComboBoxText,
@@ -165,12 +166,13 @@ fn ui_init(app: &gtk::Application) {
     about_dialog.set_version(Some(PKG_VERSION));
     about_dialog.set_comments(Some(PKG_DESCRIPTION));
 
-    // #[cfg(feature = "ra-gas")]
+    let mut check_button_mcs: Option<gtk::CheckButton> = None;
     if cfg!(feature = "ra-gas") {
         let hbox_new_modbus_address: gtk::Box = build!(builder, "hbox_new_modbus_address");
-        let check_button_mcs = gtk::CheckButton::new_with_label("MCS");
-        hbox_new_modbus_address.pack_end(&check_button_mcs, false, false, 0);
-        hbox_new_modbus_address.reorder_child(&check_button_mcs, 1);
+        let button_mcs = gtk::CheckButton::new_with_label("MCS");
+        hbox_new_modbus_address.pack_end(&button_mcs, false, false, 0);
+        hbox_new_modbus_address.reorder_child(&button_mcs, 1);
+        check_button_mcs = Some(button_mcs);
     }
 
     application_window.set_application(Some(app));
@@ -189,10 +191,20 @@ fn ui_init(app: &gtk::Application) {
     css_provider
         .load_from_path("resources/style.css")
         .expect("Failed to load CSS stylesheet");
+    // CSS for RA-GAS Version
     #[cfg(feature = "ra-gas")]
-    css_provider
-        .load_from_path("resources/ra-gas.css")
-        .expect("Failed to load CSS stylesheet (ra-gas features)");
+    {
+        let css_provider_ra_gas = gtk::CssProvider::new();
+        gtk::StyleContext::add_provider_for_screen(
+            &screen,
+            &css_provider_ra_gas,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
+
+        css_provider_ra_gas
+            .load_from_path("resources/ra-gas.css")
+            .expect("Failed to load CSS stylesheet (ra-gas features)");
+    }
     //
     // Callbacks
     //
@@ -212,7 +224,6 @@ fn ui_init(app: &gtk::Application) {
             @strong tokio_thread_sender
             => move |s| {
                 if s.get_active() {
-                    scan_ports(&combo_box_text_ports, &combo_box_text_ports_map);
                     // get port
                     let active_port = combo_box_text_ports.get_active().unwrap_or(0);
                     info!("active_port: {:?}", &active_port);
@@ -224,8 +235,6 @@ fn ui_init(app: &gtk::Application) {
                             break;
                         }
                     }
-                    info!("port: {:?}", &port);
-
                     // get modbus_address
                     let modbus_address = entry_modbus_address.get_text().unwrap_or("247".into());
                     info!("port: {:?}, modbus_address: {:?}", &port, &modbus_address);
@@ -233,17 +242,17 @@ fn ui_init(app: &gtk::Application) {
                     tokio_thread_sender
                         .clone()
                         .try_send(TokioCommand::Connect)
-                        .expect("Faild to send tokio command");
+                        .expect("Failed to send tokio command");
 
                     tokio_thread_sender
                         .clone()
                         .try_send(TokioCommand::UpdateSensor(port, modbus_address.parse().unwrap_or(247)))
-                        .expect("Faild to send tokio command");
+                        .expect("Failed to send tokio command");
                 } else {
-            tokio_thread_sender
-                .clone()
-                .try_send(TokioCommand::Disconnect)
-                .expect("Faild to send tokio command");
+                    tokio_thread_sender
+                        .clone()
+                        .try_send(TokioCommand::Disconnect)
+                        .expect("Failed to send tokio command");
             }
         }
     ));
@@ -373,6 +382,7 @@ fn ui_init(app: &gtk::Application) {
         button_nullpunkt,
         button_reset,
         button_sensor_working_mode,
+        check_button_mcs,
         combo_box_text_ports_changed_signal,
         combo_box_text_ports_map,
         combo_box_text_ports,
@@ -457,6 +467,7 @@ fn ui_init(app: &gtk::Application) {
                         ui.combo_box_text_ports_map.borrow_mut().clear();
                         if ports.is_empty() {
                             disable_ui_elements(&ui);
+
                             ui.combo_box_text_ports
                                 .append(None, "Keine Schnittstelle gefunden");
                             ui.combo_box_text_ports.set_active(Some(0));
@@ -594,6 +605,9 @@ fn ui_init(app: &gtk::Application) {
     c.spawn_local(future);
 }
 
+/// Enable UI elements
+///
+/// Helper function enable User Interface elements
 fn enable_ui_elements(ui: &Ui) {
     ui.toggle_button_connect.set_active(false);
     ui.combo_box_text_ports.set_sensitive(true);
@@ -601,14 +615,25 @@ fn enable_ui_elements(ui: &Ui) {
     ui.entry_modbus_address.set_sensitive(true);
     ui.button_reset.set_sensitive(true);
     // FIXME: Remove this hardcoded value
-    ui.label_sensor_type_value
-        .set_text("RA-GAS GmbH - NE4_MOD_BUS");
+    // ui.label_sensor_type_value
+    //     .set_text("RA-GAS GmbH - NE4_MOD_BUS");
+    ui.label_sensor_type_value.set_text("");
+    ui.label_sensor_value_value.set_text("");
+    ui.label_sensor_ma_value.set_text("");
     ui.button_nullpunkt.set_sensitive(true);
     ui.button_messgas.set_sensitive(true);
     ui.button_new_modbus_address.set_sensitive(true);
     ui.button_sensor_working_mode.set_sensitive(true);
+
+    match ui.check_button_mcs {
+        Some(ref button) => button.set_sensitive(true),
+        None => {}
+    }
 }
 
+/// Disable UI elements
+///
+/// Helper function disable User Interface elements
 fn disable_ui_elements(ui: &Ui) {
     // ui.toggle_button_connect.set_active(true);
     ui.combo_box_text_ports.set_sensitive(false);
@@ -616,12 +641,18 @@ fn disable_ui_elements(ui: &Ui) {
     ui.entry_modbus_address.set_sensitive(false);
     ui.button_reset.set_sensitive(false);
     // FIXME: Remove this hardcoded value
-    ui.label_sensor_type_value
-        .set_text("RA-GAS GmbH - NE4_MOD_BUS");
+    ui.label_sensor_type_value.set_text("");
+    ui.label_sensor_value_value.set_text("");
+    ui.label_sensor_ma_value.set_text("");
     ui.button_nullpunkt.set_sensitive(false);
     ui.button_messgas.set_sensitive(false);
     ui.button_new_modbus_address.set_sensitive(false);
     ui.button_sensor_working_mode.set_sensitive(false);
+
+    match ui.check_button_mcs {
+        Some(ref button) => button.set_sensitive(false),
+        None => {}
+    }
 }
 
 /// Log messages to the status bar using the specific status context.
@@ -634,20 +665,25 @@ fn log_status(ui: &Ui, context: StatusContext, message: &str) {
     }
 }
 
+/// Scan available serial ports
+///
+/// Called once on program start
 fn scan_ports(
     combo_box_text_ports: &gtk::ComboBoxText,
     combo_box_text_ports_map: &Rc<RefCell<HashMap<String, u32>>>,
 ) {
     let mut combo_box_text_ports_map = combo_box_text_ports_map.borrow_mut();
-    let ports = tokio_thread::scan_ports();
+    let ports = tokio_thread::get_ports();
+    combo_box_text_ports.remove_all();
+    combo_box_text_ports_map.clear();
     if !ports.is_empty() {
         for (i, p) in (0u32..).zip(ports.into_iter()) {
             combo_box_text_ports.append(None, &p);
             combo_box_text_ports_map.insert(p, i);
         }
-        combo_box_text_ports.set_active(Some(0));
     } else {
-        combo_box_text_ports.append(None, "Keine Schnittstelle gefunden");
+        let msg: &str = "Keine Schnittstelle gefunden";
+        combo_box_text_ports.append(None, msg);
         combo_box_text_ports.set_active(Some(0));
         combo_box_text_ports.set_sensitive(false);
     }
