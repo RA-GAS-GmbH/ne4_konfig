@@ -100,8 +100,8 @@ fn ui_init(app: &gtk::Application) {
             .collect();
     // Serial port selector
     let combo_box_text_ports: gtk::ComboBoxText = build!(builder, "combo_box_text_ports");
-    let mut combo_box_text_ports_map = HashMap::<String, u32>::new();
-    scan_ports(&combo_box_text_ports, &mut combo_box_text_ports_map);
+    let combo_box_text_ports_map = Rc::new(RefCell::new(HashMap::<String, u32>::new()));
+    scan_ports(&combo_box_text_ports, &combo_box_text_ports_map);
 
     // Sensor Working Mode selector
     let combo_box_text_sensor_working_mode: gtk::ComboBoxText =
@@ -129,34 +129,22 @@ fn ui_init(app: &gtk::Application) {
 
     // Modbus Adresse
     let entry_modbus_address: gtk::Entry = build!(builder, "entry_modbus_address");
-    entry_modbus_address.set_sensitive(false);
     let entry_new_modbus_address: gtk::Entry = build!(builder, "entry_new_modbus_address");
-    entry_new_modbus_address.set_sensitive(false);
 
     // Reset Button
     let button_reset: gtk::Button = build!(builder, "button_reset");
     // Labels Sensor Werte
     let label_sensor_type_value: gtk::Label = build!(builder, "label_sensor_type_value");
     let button_nullpunkt: gtk::Button = build!(builder, "button_nullpunkt");
-    button_nullpunkt.set_sensitive(false);
     let button_messgas: gtk::Button = build!(builder, "button_messgas");
-    button_messgas.set_sensitive(false);
     let button_new_modbus_address: gtk::Button = build!(builder, "button_new_modbus_address");
-    button_new_modbus_address.set_sensitive(false);
     let button_sensor_working_mode: gtk::Button = build!(builder, "button_sensor_working_mode");
-    button_sensor_working_mode.set_sensitive(false);
 
     // ListStore Sensor Values
     let list_store_sensor: gtk::ListStore = build!(builder, "list_store_sensor");
 
-    // Connect button, disabled if no ports available
     let toggle_button_connect: gtk::ToggleButton = build!(builder, "toggle_button_connect");
-    if combo_box_text_ports_map.is_empty() {
-        toggle_button_connect.set_sensitive(false);
-    }
-
     let label_sensor_value_value: gtk::Label = build!(builder, "label_sensor_value_value");
-
     let label_sensor_ma_value: gtk::Label = build!(builder, "label_sensor_ma_value");
 
     let menu_item_quit: gtk::MenuItem = build!(builder, "menu_item_quit");
@@ -224,12 +212,13 @@ fn ui_init(app: &gtk::Application) {
             @strong tokio_thread_sender
             => move |s| {
                 if s.get_active() {
+                    scan_ports(&combo_box_text_ports, &combo_box_text_ports_map);
                     // get port
                     let active_port = combo_box_text_ports.get_active().unwrap_or(0);
                     info!("active_port: {:?}", &active_port);
 
                     let mut port = None;
-                    for (p, i) in &combo_box_text_ports_map {
+                    for (p, i) in &*combo_box_text_ports_map.borrow() {
                         if *i == active_port {
                             port = Some(p.to_owned());
                             break;
@@ -250,14 +239,13 @@ fn ui_init(app: &gtk::Application) {
                         .clone()
                         .try_send(TokioCommand::UpdateSensor(port, modbus_address.parse().unwrap_or(247)))
                         .expect("Faild to send tokio command");
-
                 } else {
             tokio_thread_sender
                 .clone()
                 .try_send(TokioCommand::Disconnect)
                 .expect("Faild to send tokio command");
-        }
             }
+        }
     ));
 
     button_new_modbus_address.connect_clicked(clone!(
@@ -269,7 +257,7 @@ fn ui_init(app: &gtk::Application) {
         => move |_| {
             let active_port = combo_box_text_ports.get_active().unwrap_or(0);
             let mut port = None;
-            for (p, i) in &combo_box_text_ports_map {
+            for (p, i) in &*combo_box_text_ports_map.borrow() {
                 if *i == active_port {
                     port = Some(p.to_owned());
                     break;
@@ -293,7 +281,7 @@ fn ui_init(app: &gtk::Application) {
         => move |_| {
             let active_port = combo_box_text_ports.get_active().unwrap_or(0);
             let mut port = None;
-            for (p, i) in &combo_box_text_ports_map {
+            for (p, i) in &*combo_box_text_ports_map.borrow() {
                 if *i == active_port {
                     port = Some(p.to_owned());
                     break;
@@ -315,7 +303,7 @@ fn ui_init(app: &gtk::Application) {
         => move |_| {
             let active_port = combo_box_text_ports.get_active().unwrap_or(0);
             let mut port = None;
-            for (p, i) in &combo_box_text_ports_map {
+            for (p, i) in &*combo_box_text_ports_map.borrow() {
                 if *i == active_port {
                     port = Some(p.to_owned());
                     break;
@@ -342,7 +330,7 @@ fn ui_init(app: &gtk::Application) {
         @strong tokio_thread_sender => move |_| {
             let active_port = combo_box_text_ports.get_active().unwrap_or(0);
             let mut port = None;
-            for (p, i) in &combo_box_text_ports_map {
+            for (p, i) in &*combo_box_text_ports_map.borrow() {
                 if *i == active_port {
                     port = Some(p.to_owned());
                     break;
@@ -386,7 +374,7 @@ fn ui_init(app: &gtk::Application) {
         button_reset,
         button_sensor_working_mode,
         combo_box_text_ports_changed_signal,
-        combo_box_text_ports_map: Rc::new(RefCell::new(combo_box_text_ports_map)),
+        combo_box_text_ports_map,
         combo_box_text_ports,
         combo_box_text_sensor_working_mode,
         entry_modbus_address,
@@ -648,8 +636,9 @@ fn log_status(ui: &Ui, context: StatusContext, message: &str) {
 
 fn scan_ports(
     combo_box_text_ports: &gtk::ComboBoxText,
-    combo_box_text_ports_map: &mut HashMap<String, u32>,
+    combo_box_text_ports_map: &Rc<RefCell<HashMap<String, u32>>>,
 ) {
+    let mut combo_box_text_ports_map = combo_box_text_ports_map.borrow_mut();
     let ports = tokio_thread::scan_ports();
     if !ports.is_empty() {
         for (i, p) in (0u32..).zip(ports.into_iter()) {
