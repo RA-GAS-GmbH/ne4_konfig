@@ -5,7 +5,7 @@ use gio::prelude::*;
 use glib::clone;
 use glib::{signal_handler_block, signal_handler_unblock};
 use gtk::prelude::*;
-use gtk::Application;
+use gtk::{Application, InfoBarExt};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -33,10 +33,12 @@ pub struct Ui {
     combo_box_text_ports: gtk::ComboBoxText,
     combo_box_text_sensor_working_mode: gtk::ComboBoxText,
     entry_modbus_address: gtk::Entry,
+    infobar_info: gtk::InfoBar,
     label_sensor_ma_value: gtk::Label,
     label_sensor_type_value: gtk::Label,
     label_sensor_value_value: gtk::Label,
     list_store_sensor: gtk::ListStore,
+    revealer_infobar_info: gtk::Revealer,
     statusbar_application: gtk::Statusbar,
     statusbar_contexts: HashMap<StatusContext, u32>,
     toggle_button_connect: gtk::ToggleButton,
@@ -89,8 +91,49 @@ fn ui_init(app: &gtk::Application) {
 
     // Now build the UI
     let glade_str = include_str!("main.ui");
-    let builder = gtk::Builder::new_from_string(glade_str);
+    let builder = gtk::Builder::from_string(glade_str);
     let application_window: gtk::ApplicationWindow = build!(builder, "application_window");
+
+    // Infobars
+    let revealer_infobar_info: gtk::Revealer = build!(builder, "revealer_infobar_info");
+    let infobar_info: gtk::InfoBar = build!(builder, "infobar_info");
+    let infobar_warning: gtk::InfoBar = build!(builder, "infobar_warning");
+    let infobar_error: gtk::InfoBar = build!(builder, "infobar_error");
+    let infobar_question: gtk::InfoBar = build!(builder, "infobar_question");
+
+    let button_close_infobar_info: gtk::Button = infobar_info
+        .add_button("Ok", gtk::ResponseType::Close)
+        .unwrap();
+    let _ = button_close_infobar_info.connect_clicked(clone!(
+    @strong infobar_info
+    => move |_| {
+        &infobar_info.hide();
+    }));
+    let button_close_infobar_warning: gtk::Button = infobar_warning
+        .add_button("Ok", gtk::ResponseType::Close)
+        .unwrap();
+    let _ = button_close_infobar_warning.connect_clicked(clone!(
+    @strong infobar_warning
+    => move |_| {
+        &infobar_warning.hide();
+    }));
+    let button_close_infobar_error: gtk::Button = infobar_error
+        .add_button("Ok", gtk::ResponseType::Close)
+        .unwrap();
+    let _ = button_close_infobar_error.connect_clicked(clone!(
+    @strong infobar_error
+    => move |_| {
+        &infobar_error.hide();
+    }));
+    let button_close_infobar_question: gtk::Button = infobar_question
+        .add_button("Ok", gtk::ResponseType::Close)
+        .unwrap();
+    let _ = button_close_infobar_question.connect_clicked(clone!(
+    @strong infobar_question
+    => move |_| {
+        &infobar_question.hide();
+    }));
+
     // Statusbar
     let statusbar_application: gtk::Statusbar = build!(builder, "statusbar_application");
     let context_id_port_ops = statusbar_application.get_context_id("port operations");
@@ -169,7 +212,7 @@ fn ui_init(app: &gtk::Application) {
     let mut check_button_mcs: Option<gtk::CheckButton> = None;
     if cfg!(feature = "ra-gas") {
         let hbox_new_modbus_address: gtk::Box = build!(builder, "hbox_new_modbus_address");
-        let button_mcs = gtk::CheckButton::new_with_label("MCS");
+        let button_mcs = gtk::CheckButton::with_label("MCS");
         hbox_new_modbus_address.pack_end(&button_mcs, false, false, 0);
         hbox_new_modbus_address.reorder_child(&button_mcs, 1);
         check_button_mcs = Some(button_mcs);
@@ -226,7 +269,6 @@ fn ui_init(app: &gtk::Application) {
                 if s.get_active() {
                     // get port
                     let active_port = combo_box_text_ports.get_active().unwrap_or(0);
-                    info!("active_port: {:?}", &active_port);
 
                     let mut port = None;
                     for (p, i) in &*combo_box_text_ports_map.borrow() {
@@ -236,7 +278,7 @@ fn ui_init(app: &gtk::Application) {
                         }
                     }
                     // get modbus_address
-                    let modbus_address = entry_modbus_address.get_text().unwrap_or("247".into());
+                    let modbus_address = entry_modbus_address.get_text().parse::<u8>().unwrap_or(247);
                     info!("port: {:?}, modbus_address: {:?}", &port, &modbus_address);
 
                     tokio_thread_sender
@@ -246,7 +288,7 @@ fn ui_init(app: &gtk::Application) {
 
                     tokio_thread_sender
                         .clone()
-                        .try_send(TokioCommand::UpdateSensor(port, modbus_address.parse().unwrap_or(247)))
+                        .try_send(TokioCommand::UpdateSensor(port, modbus_address))
                         .expect("Failed to send tokio command");
                 } else {
                     tokio_thread_sender
@@ -272,8 +314,8 @@ fn ui_init(app: &gtk::Application) {
                     break;
                 }
             }
-            let modbus_address = entry_modbus_address.get_text().unwrap_or("0".into());
-            let new_modbus_address = entry_new_modbus_address.get_text().unwrap_or("0".into());
+            let modbus_address = entry_modbus_address.get_text(); // .unwrap_or("0".into());
+            let new_modbus_address = entry_new_modbus_address.get_text(); // .unwrap_or("0".into());
 
             tokio_thread_sender
                 .clone()
@@ -296,7 +338,7 @@ fn ui_init(app: &gtk::Application) {
                     break;
                 }
             }
-            let modbus_address = entry_modbus_address.get_text().unwrap_or("0".into());
+            let modbus_address = entry_modbus_address.get_text(); // .unwrap_or("0".into());
 
             tokio_thread_sender
                 .clone()
@@ -318,7 +360,7 @@ fn ui_init(app: &gtk::Application) {
                     break;
                 }
             }
-            let modbus_address = entry_modbus_address.get_text().unwrap_or("0".into());
+            let modbus_address = entry_modbus_address.get_text(); // .unwrap_or("0".into());
 
             tokio_thread_sender
                 .clone()
@@ -345,7 +387,7 @@ fn ui_init(app: &gtk::Application) {
                     break;
                 }
             }
-            let modbus_address = entry_modbus_address.get_text().unwrap_or("247".into());
+            let modbus_address = entry_modbus_address.get_text(); // .unwrap_or("247".into());
             let working_mode = combo_box_text_sensor_working_mode.get_active_id().unwrap_or("0".into());
 
             tokio_thread_sender
@@ -356,7 +398,7 @@ fn ui_init(app: &gtk::Application) {
 
     menu_item_quit.connect_activate(clone!(
         @weak application_window => move |_| {
-            application_window.destroy()
+            application_window.close()
         }
     ));
 
@@ -388,10 +430,12 @@ fn ui_init(app: &gtk::Application) {
         combo_box_text_ports,
         combo_box_text_sensor_working_mode,
         entry_modbus_address,
+        infobar_info,
         label_sensor_ma_value,
         label_sensor_type_value,
         label_sensor_value_value,
         list_store_sensor,
+        revealer_infobar_info,
         statusbar_application,
         statusbar_contexts: context_map,
         toggle_button_connect,
@@ -515,6 +559,7 @@ fn ui_init(app: &gtk::Application) {
                     }
                     UiCommand::UpdateSensorValues(values) => {
                         info!("Execute event UiCommand::UpdateSensorValues");
+                        // show_info(&ui, "Not working jeat!");
                         debug!("{:?}", values);
                         match values {
                             Ok(values) => {
@@ -655,6 +700,18 @@ fn disable_ui_elements(ui: &Ui) {
     }
 }
 
+/// Show InfoBar Info
+///
+/// FIXME: Not working! Revealed status can't set, message isn't shown
+fn _show_info(ui: &Ui, message: &str) {
+    let content = &ui.infobar_info.get_content_area();
+    let label = gtk::Label::new(None);
+    label.set_text(message);
+    content.add(&label);
+
+    &ui.infobar_info.show();
+    &ui.revealer_infobar_info.set_reveal_child(true);
+}
 /// Log messages to the status bar using the specific status context.
 fn log_status(ui: &Ui, context: StatusContext, message: &str) {
     if let Some(context_id) = ui.statusbar_contexts.get(&context) {

@@ -22,7 +22,7 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
 
 -->
 <interface>
-  <requires lib="gtk+" version="3.20"/>
+  <requires lib="gtk+" version="3.22"/>
   <!-- interface-license-type gplv3 -->
   <!-- interface-name ne4_konfig -->
   <!-- interface-description GUI f\303\274r die Konfiguration der 'NE4-MOD-BUS' Sensoren -->
@@ -226,80 +226,85 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
         <property name="can_focus">False</property>
         <property name="orientation">vertical</property>
         <child>
-          <object class="GtkBox">
+          <object class="GtkBox" id="hbox_infobar">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="orientation">vertical</property>
             <child>
-              <object class="GtkInfoBar" id="infobar_info">
+              <object class="GtkRevealer" id="revealer_infobar_info">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="show_close_button">True</property>
-                <child internal-child="action_area">
-                  <object class="GtkButtonBox">
+                <property name="transition_type">none</property>
+                <child>
+                  <object class="GtkInfoBar" id="infobar_info">
+                    <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="spacing">6</property>
-                    <property name="layout_style">end</property>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="visible">True</property>
+                    <child internal-child="action_area">
+                      <object class="GtkButtonBox">
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Info:</property>
-                        <attributes>
-                          <attribute name="weight" value="bold"/>
-                        </attributes>
+                        <property name="spacing">6</property>
+                        <property name="layout_style">end</property>
+                        <child>
+                          <object class="GtkLabel" id="label_infobar_info">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="label" translatable="yes">Info:</property>
+                            <attributes>
+                              <attribute name="weight" value="bold"/>
+                            </attributes>
+                          </object>
+                          <packing>
+                            <property name="expand">True</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="label_infobar_info_text">
+                            <property name="name">label_infobar_text</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                          </object>
+                          <packing>
+                            <property name="expand">True</property>
+                            <property name="fill">True</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
                       </object>
                       <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">True</property>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child internal-child="content_area">
+                      <object class="GtkBox">
+                        <property name="can_focus">False</property>
+                        <property name="spacing">16</property>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
                         <property name="position">0</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="label_infobar_info_text">
-                        <property name="name">label_infobar_text</property>
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">info text</property>
-                      </object>
-                      <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">True</property>
-                        <property name="position">1</property>
-                      </packing>
-                    </child>
-                    <child>
                       <placeholder/>
                     </child>
                   </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">False</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child internal-child="content_area">
-                  <object class="GtkBox">
-                    <property name="can_focus">False</property>
-                    <property name="spacing">16</property>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">False</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <placeholder/>
                 </child>
               </object>
               <packing>
@@ -309,64 +314,81 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
               </packing>
             </child>
             <child>
-              <object class="GtkInfoBar" id="infobar_warning">
+              <object class="GtkRevealer" id="revealer_infobar_warning">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="message_type">warning</property>
-                <property name="show_close_button">True</property>
-                <child internal-child="action_area">
-                  <object class="GtkButtonBox">
+                <property name="transition_type">none</property>
+                <child>
+                  <object class="GtkInfoBar" id="infobar_warning">
+                    <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="spacing">6</property>
-                    <property name="layout_style">end</property>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="label_infobar_text1">
-                        <property name="name">label_infobar_text</property>
-                        <property name="visible">True</property>
+                    <property name="message_type">warning</property>
+                    <child internal-child="action_area">
+                      <object class="GtkButtonBox">
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">info text</property>
+                        <property name="spacing">6</property>
+                        <property name="layout_style">end</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="label" translatable="yes">Warnung:</property>
+                            <attributes>
+                              <attribute name="weight" value="bold"/>
+                            </attributes>
+                          </object>
+                          <packing>
+                            <property name="expand">True</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="label_infobar_warning_text">
+                            <property name="name">label_infobar_text</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                          </object>
+                          <packing>
+                            <property name="expand">True</property>
+                            <property name="fill">True</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
                       </object>
                       <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">True</property>
-                        <property name="position">1</property>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child internal-child="content_area">
+                      <object class="GtkBox">
+                        <property name="can_focus">False</property>
+                        <property name="spacing">16</property>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">0</property>
                       </packing>
                     </child>
                     <child>
                       <placeholder/>
                     </child>
                   </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">False</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child internal-child="content_area">
-                  <object class="GtkBox">
-                    <property name="can_focus">False</property>
-                    <property name="spacing">16</property>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">False</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <placeholder/>
                 </child>
               </object>
               <packing>
@@ -376,64 +398,81 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
               </packing>
             </child>
             <child>
-              <object class="GtkInfoBar" id="infobar_error">
+              <object class="GtkRevealer" id="revealer_infobar_error">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="message_type">error</property>
-                <property name="show_close_button">True</property>
-                <child internal-child="action_area">
-                  <object class="GtkButtonBox">
+                <property name="transition_type">none</property>
+                <child>
+                  <object class="GtkInfoBar" id="infobar_error">
+                    <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="spacing">6</property>
-                    <property name="layout_style">end</property>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="label_infobar_text2">
-                        <property name="name">label_infobar_text</property>
-                        <property name="visible">True</property>
+                    <property name="message_type">error</property>
+                    <child internal-child="action_area">
+                      <object class="GtkButtonBox">
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">info text</property>
+                        <property name="spacing">6</property>
+                        <property name="layout_style">end</property>
+                        <child>
+                          <object class="GtkLabel" id="label_infobar_error">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="label" translatable="yes">Fehler:</property>
+                            <attributes>
+                              <attribute name="weight" value="bold"/>
+                            </attributes>
+                          </object>
+                          <packing>
+                            <property name="expand">True</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="label_infobar_error_text">
+                            <property name="name">label_infobar_text</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                          </object>
+                          <packing>
+                            <property name="expand">True</property>
+                            <property name="fill">True</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
                       </object>
                       <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">True</property>
-                        <property name="position">1</property>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child internal-child="content_area">
+                      <object class="GtkBox">
+                        <property name="can_focus">False</property>
+                        <property name="spacing">16</property>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">0</property>
                       </packing>
                     </child>
                     <child>
                       <placeholder/>
                     </child>
                   </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">False</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child internal-child="content_area">
-                  <object class="GtkBox">
-                    <property name="can_focus">False</property>
-                    <property name="spacing">16</property>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">False</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <placeholder/>
                 </child>
               </object>
               <packing>
@@ -443,64 +482,81 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
               </packing>
             </child>
             <child>
-              <object class="GtkInfoBar" id="infobar_question">
+              <object class="GtkRevealer" id="revealer_infobar_question">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="message_type">question</property>
-                <property name="show_close_button">True</property>
-                <child internal-child="action_area">
-                  <object class="GtkButtonBox">
+                <property name="transition_type">none</property>
+                <child>
+                  <object class="GtkInfoBar" id="infobar_question">
+                    <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="spacing">6</property>
-                    <property name="layout_style">end</property>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="label_infobar_text3">
-                        <property name="name">label_infobar_text</property>
-                        <property name="visible">True</property>
+                    <property name="message_type">question</property>
+                    <child internal-child="action_area">
+                      <object class="GtkButtonBox">
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">info text</property>
+                        <property name="spacing">6</property>
+                        <property name="layout_style">end</property>
+                        <child>
+                          <object class="GtkLabel" id="label_infobar_question">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="label" translatable="yes">Frage:</property>
+                            <attributes>
+                              <attribute name="weight" value="bold"/>
+                            </attributes>
+                          </object>
+                          <packing>
+                            <property name="expand">True</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="label_infobar_question_text">
+                            <property name="name">label_infobar_text</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                          </object>
+                          <packing>
+                            <property name="expand">True</property>
+                            <property name="fill">True</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
                       </object>
                       <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">True</property>
-                        <property name="position">1</property>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child internal-child="content_area">
+                      <object class="GtkBox">
+                        <property name="can_focus">False</property>
+                        <property name="spacing">16</property>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="position">0</property>
                       </packing>
                     </child>
                     <child>
                       <placeholder/>
                     </child>
                   </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">False</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child internal-child="content_area">
-                  <object class="GtkBox">
-                    <property name="can_focus">False</property>
-                    <property name="spacing">16</property>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">False</property>
-                    <property name="position">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <placeholder/>
                 </child>
               </object>
               <packing>
@@ -571,7 +627,7 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
                 <property name="text" translatable="yes">247</property>
                 <property name="xalign">1</property>
                 <property name="progress_pulse_step">1</property>
-                <property name="input_purpose">digits</property>
+                <property name="input_purpose">number</property>
               </object>
               <packing>
                 <property name="pack_type">end</property>
