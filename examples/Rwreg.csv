@@ -1,52 +1,52 @@
 "Rwreg Nr.
-(Fcode: 0x03, 0x06)";Wertebereich;"Zugeordnete Größe
-und Einheit";Messwerteigenschaft
-0;0 .. 65535 [0];;Kundencode: zur freien Belegung z.B. Raumcode *
+(Fcode: 0x03, 0x06)";"Wertebereich";"Zugeordnete Größe
+und Einheit";"Messwerteigenschaft"
+0;"0 .. 65535 [0]";;"Kundencode: zur freien Belegung z.B. Raumcode *"
 ;;;
-2;0 … 10000 [11111];0 … 10000 ppm;Messwertvorgabe für Testzwecke
-3;0 … 2500 [11111];0 … 25,00 mA;Ausgangsstrom vorgeben für Testzwecke
-4;-200 … 600 [11111];-20,0 … 60,0 °C;Temperatur vorgeben für Testzwecke
+2;"0 … 10000 [11111]";"0 … 10000 ppm";"Messwertvorgabe für Testzwecke"
+3;"0 … 2500 [11111]";"0 … 25,00 mA";"Ausgangsstrom vorgeben für Testzwecke"
+4;"-200 … 600 [11111]";"-20,0 … 60,0 °C";"Temperatur vorgeben für Testzwecke"
 ;;;
-10;0 … 16383;;Sensorspannung im Nullpunkt	*
-11;0;0;Sensorwert Nullpunkt = 0	*
-12;0 … 16383;;Sensorspannung im Kalibrierpunkt ( bei Endwert) 	*
-13;0 … 10000;0 … 10000 ppm;Sensorwert im Kalibrierpunkt (bei Endwert) 	*
+10;"0 … 16383";;"Sensorspannung im Nullpunkt	*"
+11;0;0;"Sensorwert Nullpunkt = 0	*"
+12;"0 … 16383";;"Sensorspannung im Kalibrierpunkt ( bei Endwert) 	*"
+13;"0 … 10000";"0 … 10000 ppm";"Sensorwert im Kalibrierpunkt (bei Endwert) 	*"
 ;;;
-15;0 … 10000 [0];0 … 10000 ppm [0 ppm];Messwert unten für Ausgangsstrom unten	*
-16;0 … 2500 [400];0 … 25,00 mA [4 mA];Ausgangsstrom im unteren Punkt	*
-17;0 … 10000 [1000];0 … 10000 ppm [1000ppm];Messwert oben für Ausgangsstrom oben	*
-16;0 … 2500 [2000];0 … 25,00 mA [20 mA];Ausgangsstrom im oberen Punkt	*
+15;"0 … 10000 [0]";"0 … 10000 ppm [0 ppm]";"Messwert unten für Ausgangsstrom unten	*"
+16;"0 … 2500 [400]";"0 … 25,00 mA [4 mA]";"Ausgangsstrom im unteren Punkt	*"
+17;"0 … 10000 [1000]";"0 … 10000 ppm [1000ppm]";"Messwert oben für Ausgangsstrom oben	*"
+16;"0 … 2500 [2000]";"0 … 25,00 mA [20 mA]";"Ausgangsstrom im oberen Punkt	*"
 ;;;
-20;0 / 1;;Status (Auswerte IC) (keine Eingabemöglichkeit)
-21;0 / 1;;Lock (Auswerte IC) 	*
-22;0 … 7;;TIA_GAIN (Auswerte IC) 	*
-23;0 … 3;;RLOAD (Auswerte IC) 	*
-24;0 / 1;;REF_Source (Auswerte IC) 	*
-25;0 … 3;;INT_Z (Auswerte IC) 	*
-26;0 / 1;;BIAS_Sign (Auswerte IC) 	*
-27;0 … 13;;BIAS (Auswerte IC) 	*
-28;0 / 1;;FET_Short (Auswerte IC) 	*
-29;0 … 7;;OP_Mode (Auswerte IC) 	*
-30;50 ... 200;0,50 … 2,00;Kennlinie vom Sensorhersteller bei -20°C	*
-31;50 ... 200;0,50 … 2,00;Kennlinie vom Sensorhersteller bei 0°C	*
-32;50 ... 200;0,50 … 2,00;Kennlinie vom Sensorhersteller bei 10°C	*
-33;50 ... 200;0,50 … 2,00;Kennlinie vom Sensorhersteller bei 20°C	*
-34;50 ... 200;0,50 … 2,00;Kennlinie vom Sensorhersteller bei 30°C	*
-35;50 ... 200;0,50 … 2,00;Kennlinie vom Sensorhersteller bei 40°C	*
-36;50 ... 200;0,50 … 2,00;Kennlinie vom Sensorhersteller bei 60°C	*
+20;"0 / 1";;"Status (Auswerte IC) (keine Eingabemöglichkeit)"
+21;"0 / 1";;"Lock (Auswerte IC) 	*"
+22;"0 … 7";;"TIA_GAIN (Auswerte IC) 	*"
+23;"0 … 3";;"RLOAD (Auswerte IC) 	*"
+24;"0 / 1";;"REF_Source (Auswerte IC) 	*"
+25;"0 … 3";;"INT_Z (Auswerte IC) 	*"
+26;"0 / 1";;"BIAS_Sign (Auswerte IC) 	*"
+27;"0 … 13";;"BIAS (Auswerte IC) 	*"
+28;"0 / 1";;"FET_Short (Auswerte IC) 	*"
+29;"0 … 7";;"OP_Mode (Auswerte IC) 	*"
+30;"50 ... 200";"0,50 … 2,00";"Kennlinie vom Sensorhersteller bei -20°C	*"
+31;"50 ... 200";"0,50 … 2,00";"Kennlinie vom Sensorhersteller bei 0°C	*"
+32;"50 ... 200";"0,50 … 2,00";"Kennlinie vom Sensorhersteller bei 10°C	*"
+33;"50 ... 200";"0,50 … 2,00";"Kennlinie vom Sensorhersteller bei 20°C	*"
+34;"50 ... 200";"0,50 … 2,00";"Kennlinie vom Sensorhersteller bei 30°C	*"
+35;"50 ... 200";"0,50 … 2,00";"Kennlinie vom Sensorhersteller bei 40°C	*"
+36;"50 ... 200";"0,50 … 2,00";"Kennlinie vom Sensorhersteller bei 60°C	*"
 ;;;
-42;0 … 16000 [11111];;Sensor AD-Wert vorgeben für Testzwecke
+42;"0 … 16000 [11111]";;"Sensor AD-Wert vorgeben für Testzwecke"
 ;;;
-49;0 … 65535;;Neustart / Grunddaten / entsichern
+49;"0 … 65535";;"Neustart / Grunddaten / entsichern"
 ;;;
-50;1 … 247 [1];;Modbus-Geräteadresse	*
-51;0 … 3 [1];;Modbus Baudrate	*
-52;0 … 4 [0];;Modbus Mode	*
-53;10 .. 1000 [180];;Kalibrierwert Ausgangsstrom 4mA	*
-54;10 … 1000 [900];;Kalibrierwert Ausgangsstrom 20mA	*
+50;"1 … 247 [1]";;"Modbus-Geräteadresse	*"
+51;"0 … 3 [1]";;"Modbus Baudrate	*"
+52;"0 … 4 [0]";;"Modbus Mode	*"
+53;"10 .. 1000 [180]";;"Kalibrierwert Ausgangsstrom 4mA	*"
+54;"10 … 1000 [900]";;"Kalibrierwert Ausgangsstrom 20mA	*"
 ;;;
-95;0, 129 … 256 [90];;Sensornummer für MCS4000 - Mode
-96;0 … 65535;;Einschaltzähler	*
-97;0 … 65535;;Betriebsstunden	*
-98;0 … 65535;;Gerätekennung vom Werk	*
-99;0 … 65535;;Arbeitsweise vom Werk	*
+95;"0, 129 … 256 [90]";;"Sensornummer für MCS4000 - Mode"
+96;"0 … 65535";;"Einschaltzähler	*"
+97;"0 … 65535";;"Betriebsstunden	*"
+98;"0 … 65535";;"Gerätekennung vom Werk	*"
+99;"0 … 65535";;"Arbeitsweise vom Werk	*"

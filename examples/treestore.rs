@@ -2,19 +2,7 @@ use gio::prelude::*;
 use gtk::prelude::*;
 use std::env::args;
 
-fn build_ui(application: &gtk::Application) {
-    let window = gtk::ApplicationWindow::new(application);
-
-    window.set_title("Tree View/ Model Test");
-    window.set_position(gtk::WindowPosition::Center);
-    window.set_default_size(1024, 600);
-
-    let store = gtk::TreeStore::new(&[
-        glib::Type::I32,
-        glib::Type::String,
-        glib::Type::String,
-        glib::Type::String,
-    ]);
+fn fill_treestore(store: &gtk::TreeStore) {
     store.insert_with_values(
         None,
         None,
@@ -69,7 +57,7 @@ fn build_ui(application: &gtk::Application) {
         None,
         None,
         &[0, 1, 2, 3],
-        &[&11, &"0", &"0", &"Sensorwert Nullpunkt = 0	*"],
+        &[&11, &0, &0, &"Sensorwert Nullpunkt = 0	*"],
     );
     store.insert_with_values(
         None,
@@ -137,42 +125,277 @@ fn build_ui(application: &gtk::Application) {
             &"Ausgangsstrom im oberen Punkt	*",
         ],
     );
-    // 20, &0 / 1, &, &Status (Auswerte IC) (keine Eingabemöglichkeit)
-    // 21, &0 / 1, &, &Lock (Auswerte IC) 	*
-    // 22, &0 … 7, &, &TIA_GAIN (Auswerte IC) 	*
-    // 23, &0 … 3, &, &RLOAD (Auswerte IC) 	*
-    // 24, &0 / 1, &, &REF_Source (Auswerte IC) 	*
-    // 25, &0 … 3, &, &INT_Z (Auswerte IC) 	*
-    // 26, &0 / 1, &, &BIAS_Sign (Auswerte IC) 	*
-    // 27, &0 … 13, &, &BIAS (Auswerte IC) 	*
-    // 28, &0 / 1, &, &FET_Short (Auswerte IC) 	*
-    // 29, &0 … 7, &, &OP_Mode (Auswerte IC) 	*
-    // 30, &50 ... 200, &0,50 … 2,00, &Kennlinie vom Sensorhersteller bei -20°C	*
-    // 31, &50 ... 200, &0,50 … 2,00, &Kennlinie vom Sensorhersteller bei 0°C	*
-    // 32, &50 ... 200, &0,50 … 2,00, &Kennlinie vom Sensorhersteller bei 10°C	*
-    // 33, &50 ... 200, &0,50 … 2,00, &Kennlinie vom Sensorhersteller bei 20°C	*
-    // 34, &50 ... 200, &0,50 … 2,00, &Kennlinie vom Sensorhersteller bei 30°C	*
-    // 35, &50 ... 200, &0,50 … 2,00, &Kennlinie vom Sensorhersteller bei 40°C	*
-    // 36, &50 ... 200, &0,50 … 2,00, &Kennlinie vom Sensorhersteller bei 60°C	*
-    // 42, &0 … 16000 [11111], &, &Sensor AD-Wert vorgeben für Testzwecke
-    // 49, &0 … 65535, &, &Neustart / Grunddaten / entsichern
-    // 50, &1 … 247 [1], &, &Modbus-Geräteadresse	*
-    // 51, &0 … 3 [1], &, &Modbus Baudrate	*
-    // 52, &0 … 4 [0], &, &Modbus Mode	*
-    // 53, &10 .. 1000 [180], &, &Kalibrierwert Ausgangsstrom 4mA	*
-    // 54, &10 … 1000 [900], &, &Kalibrierwert Ausgangsstrom 20mA	*
-    // 95, &0, 129 … 256 [90], &, &Sensornummer für MCS4000 - Mode
-    // 96, &0 … 65535, &, &Einschaltzähler	*
-    // 97, &0 … 65535, &, &Betriebsstunden	*
-    // 98, &0 … 65535, &, &Gerätekennung vom Werk	*
-    // 99, &0 … 65535, &, &Arbeitsweise vom Werk	*
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[
+            &20,
+            &"0 / 1",
+            &"",
+            &"Status (Auswerte IC) (keine Eingabemöglichkeit)",
+        ],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[&21, &"0 / 1", &"", &"Lock (Auswerte IC) 	*"],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[&22, &"0 … 7", &"", &"TIA_GAIN (Auswerte IC) 	*"],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[&23, &"0 … 3", &"", &"RLOAD (Auswerte IC) 	*"],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[&24, &"0 / 1", &"", &"REF_Source (Auswerte IC) 	*"],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[&25, &"0 … 3", &"", &"INT_Z (Auswerte IC) 	*"],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[&26, &"0 / 1", &"", &"BIAS_Sign (Auswerte IC) 	*"],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[&27, &"0 … 13", &"", &"BIAS (Auswerte IC) 	*"],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[&28, &"0 / 1", &"", &"FET_Short (Auswerte IC) 	*"],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[&29, &"0 … 7", &"", &"OP_Mode (Auswerte IC) 	*"],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[
+            &30,
+            &"50 ... 200",
+            &"0,50 … 2,00",
+            &"Kennlinie vom Sensorhersteller bei -20°C	*",
+        ],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[
+            &31,
+            &"50 ... 200",
+            &"0,50 … 2,00",
+            &"Kennlinie vom Sensorhersteller bei 0°C	*",
+        ],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[
+            &32,
+            &"50 ... 200",
+            &"0,50 … 2,00",
+            &"Kennlinie vom Sensorhersteller bei 10°C	*",
+        ],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[
+            &33,
+            &"50 ... 200",
+            &"0,50 … 2,00",
+            &"Kennlinie vom Sensorhersteller bei 20°C	*",
+        ],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[
+            &34,
+            &"50 ... 200",
+            &"0,50 … 2,00",
+            &"Kennlinie vom Sensorhersteller bei 30°C	*",
+        ],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[
+            &35,
+            &"50 ... 200",
+            &"0,50 … 2,00",
+            &"Kennlinie vom Sensorhersteller bei 40°C	*",
+        ],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[
+            &36,
+            &"50 ... 200",
+            &"0,50 … 2,00",
+            &"Kennlinie vom Sensorhersteller bei 60°C	*",
+        ],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[
+            &42,
+            &"0 … 16000 [11111]",
+            &"",
+            &"Sensor AD-Wert vorgeben für Testzwecke",
+        ],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[
+            &49,
+            &"0 … 65535",
+            &"",
+            &"Neustart / Grunddaten / entsichern",
+        ],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[&50, &"1 … 247 [1]", &"", &"Modbus-Geräteadresse	*"],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[&51, &"0 … 3 [1]", &"", &"Modbus Baudrate	*"],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[&52, &"0 … 4 [0]", &"", &"Modbus Mode	*"],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[
+            &53,
+            &"10 .. 1000 [180]",
+            &"",
+            &"Kalibrierwert Ausgangsstrom 4mA	*",
+        ],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[
+            &54,
+            &"10 … 1000 [900]",
+            &"",
+            &"Kalibrierwert Ausgangsstrom 20mA	*",
+        ],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[
+            &95,
+            &"0, 129 … 256 [90]",
+            &"",
+            &"Sensornummer für MCS4000 - Mode",
+        ],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[&96, &"0 … 65535", &"", &"Einschaltzähler	*"],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[&97, &"0 … 65535", &"", &"Betriebsstunden	*"],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[&98, &"0 … 65535", &"", &"Gerätekennung vom Werk	*"],
+    );
+    store.insert_with_values(
+        None,
+        None,
+        &[0, 1, 2, 3],
+        &[&99, &"0 … 65535", &"", &"Arbeitsweise vom Werk	*"],
+    );
+}
+
+fn edit_cell(
+    cell: &gtk::CellRendererText,
+    path: &gtk::TreePath,
+    new_text: &str,
+    model: &gtk::TreeModelSort,
+) {
+}
+
+fn build_ui(application: &gtk::Application) {
+    let window = gtk::ApplicationWindow::new(application);
+
+    window.set_title("Tree View/ Model Test");
+    window.set_position(gtk::WindowPosition::Center);
+    window.set_default_size(1024, 600);
+
+    let store = gtk::TreeStore::new(&[
+        glib::Type::I32,
+        glib::Type::String,
+        glib::Type::String,
+        glib::Type::String,
+    ]);
+
+    fill_treestore(&store);
 
     let sortable_store = gtk::TreeModelSort::new(&store);
-    let treeview = gtk::TreeView::new_with_model(&sortable_store);
+    let treeview = gtk::TreeView::with_model(&sortable_store);
 
     let column_reg = gtk::TreeViewColumn::new();
     column_reg.set_title("Rwreg Nr.");
-    column_reg.set_clickable(true);
+    column_reg.set_clickable(false);
     column_reg.set_sort_indicator(true);
     column_reg.set_sort_column_id(0);
 
@@ -184,9 +407,6 @@ fn build_ui(application: &gtk::Application) {
 
     let column_range = gtk::TreeViewColumn::new();
     column_range.set_title("Wertebereich");
-    column_range.set_clickable(true);
-    column_range.set_sort_indicator(true);
-    column_range.set_sort_column_id(0);
 
     let renderer = gtk::CellRendererText::new();
     column_range.pack_end(&renderer, true);
@@ -196,21 +416,24 @@ fn build_ui(application: &gtk::Application) {
 
     let column_value = gtk::TreeViewColumn::new();
     column_value.set_title("Zugeordnete Größe und Einheit");
-    column_value.set_clickable(true);
-    column_value.set_sort_indicator(true);
-    column_value.set_sort_column_id(0);
 
     let renderer = gtk::CellRendererText::new();
+    renderer.set_property_editable(true);
     column_value.pack_end(&renderer, true);
     column_value.add_attribute(&renderer, "text", 2);
+
+    // renderer.connect_editing_started(move |widget, path, text| {
+    //     println!("Edit started:\nwidget: {:?}\npath: {:?}\ntext: {:?}\n", widget, path, text);
+    // });
+    renderer.connect_edited(move |widget, path, text| {
+        // println!("Edited:\nwidget: {:?}\npath: {:?}\ntext: {:?}\n", widget, path, text);
+        edit_cell(&widget, &path, text, &sortable_store);
+    });
 
     treeview.append_column(&column_value);
 
     let column_property = gtk::TreeViewColumn::new();
     column_property.set_title("Messwerteigenschaft");
-    column_property.set_clickable(true);
-    column_property.set_sort_indicator(true);
-    column_property.set_sort_column_id(0);
 
     let renderer = gtk::CellRendererText::new();
     column_property.pack_end(&renderer, true);
@@ -218,13 +441,17 @@ fn build_ui(application: &gtk::Application) {
 
     treeview.append_column(&column_property);
 
-    window.add(&treeview);
+    let scrolled_window = gtk::ScrolledWindow::new(gtk::NONE_ADJUSTMENT, gtk::NONE_ADJUSTMENT);
+    let box_main = gtk::Box::new(gtk::Orientation::Horizontal, 1);
+    scrolled_window.add(&treeview);
+
+    window.add(&scrolled_window);
     window.show_all();
 }
 
 fn main() {
     let application = gtk::Application::new(
-        Some("com.gaswarnanlagen.ne4"),
+        Some("com.gaswarnanlagen.example.treestore"),
         gio::ApplicationFlags::empty(),
     )
     .expect("Initialization failed....");
