@@ -370,8 +370,13 @@ fn edit_cell(
     cell: &gtk::CellRendererText,
     path: &gtk::TreePath,
     new_text: &str,
-    model: &gtk::TreeModelSort,
+    model: &gtk::TreeStore,
 ) {
+    if let Some(iter) = model.get_iter(&path) {
+        let old_value = model.get_value(&iter, 2);
+        println!("{:?}", old_value.get::<String>());
+        model.set_value(&iter, 2, &new_text.to_value());
+    }
 }
 
 fn build_ui(application: &gtk::Application) {
@@ -427,7 +432,7 @@ fn build_ui(application: &gtk::Application) {
     // });
     renderer.connect_edited(move |widget, path, text| {
         // println!("Edited:\nwidget: {:?}\npath: {:?}\ntext: {:?}\n", widget, path, text);
-        edit_cell(&widget, &path, text, &sortable_store);
+        edit_cell(&widget, &path, text, &store);
     });
 
     treeview.append_column(&column_value);
