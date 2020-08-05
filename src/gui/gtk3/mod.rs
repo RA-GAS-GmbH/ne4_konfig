@@ -534,17 +534,13 @@ fn ui_init(app: &gtk::Application) {
                             );
                             ui.combo_box_text_ports.set_sensitive(true);
                             ui.toggle_button_connect.set_sensitive(true);
-                        }
 
-                        log_status(
-                            &ui,
-                            StatusContext::PortOperation,
-                            &format!(
-                                "Ports found: {:?}; ports_map: {:?}",
-                                ports,
-                                &ui.combo_box_text_ports_map.borrow()
-                            ),
-                        );
+                            log_status(
+                                &ui,
+                                StatusContext::PortOperation,
+                                &format!("Ports gefunden: {:?}", ports),
+                            );
+                        }
                     }
                     // FIXME: kann weg
                     UiCommand::UpdateSensorValue(value) => {
@@ -563,45 +559,16 @@ fn ui_init(app: &gtk::Application) {
                         debug!("{:?}", values);
                         match values {
                             Ok(values) => {
+                                // Update Auswahlfeld Arbeitsweise
                                 &ui.combo_box_text_sensor_working_mode
                                     .set_active_id(Some(&values[1].to_string()));
-                                &ui.label_sensor_value_value.set_text(&values[2].to_string());
-                                let sensor_ma: f32 = values[3] as f32 / 100.0;
-                                let sensor_ma = format!("{:.02}", sensor_ma);
-                                &ui.label_sensor_ma_value.set_text(&sensor_ma);
-                                if let Some(iter) = &ui.list_store_sensor.get_iter_first() {
-                                    let _: Vec<u32> = values
-                                        .iter()
-                                        .enumerate()
-                                        .map(|(i, val)| {
-                                            let reg = &ui
-                                                .list_store_sensor
-                                                .get_value(&iter, 0)
-                                                .get::<u32>()
-                                                .unwrap_or(Some(0))
-                                                .unwrap_or(0);
-                                            // create the glib::value::Value from a u16 this is complicated (see supported types: https://gtk-rs.org/docs/glib/value/index.html)
-                                            let val = (*val as u32).to_value();
-                                            if i as u32 == *reg {
-                                                &ui.list_store_sensor.set_value(&iter, 1, &val);
-                                                &ui.list_store_sensor.iter_next(&iter);
-                                            }
-                                            0
-                                        })
-                                        .collect();
-                                    // Status log
-                                    log_status(
-                                        &ui,
-                                        StatusContext::PortOperation,
-                                        &format!("Sensor Update OK"),
-                                    );
-                                } else {
-                                    log_status(
-                                        &ui,
-                                        StatusContext::Error,
-                                        &format!("Error while iterating Sensor list"),
-                                    );
-                                }
+                                // Update Sensor Wert
+                                &ui.label_sensor_value_value
+                                    .set_text(&sanitize_sensor_value(&values));
+                                // Update mA Wert
+                                &ui.label_sensor_ma_value.set_text(&sensor_ma(&values));
+                                // Update TreeStore
+                                update_treestore(&ui, &values);
                             }
                             Err(err) => {
                                 // Status log
@@ -743,5 +710,59 @@ fn scan_ports(
         combo_box_text_ports.append(None, msg);
         combo_box_text_ports.set_active(Some(0));
         combo_box_text_ports.set_sensitive(false);
+    }
+}
+
+/// Sensorwert nachbearbeiten
+///
+/// Ich habe auf eine Nachbearbeitung ersteinmal verzichtet, da dies ein Programmfehler im Sensor
+/// ist. Laut Dokumentation liefert der Sensor an diese Stelle nur Werte zwichen 0...10000
+/// 65535 ist definitiv zu hoch.
+fn sanitize_sensor_value(values: &[u16]) -> String {
+    let value = values[2];
+    value.to_string()
+}
+
+/// mA Werte berechnen
+fn sensor_ma(values: &[u16]) -> String {
+    let sensor_ma: f32 = values[3] as f32 / 100.0;
+    let sensor_ma = format!("{:.02}", sensor_ma);
+    sensor_ma
+}
+
+/// Update Treestore
+fn update_treestore(ui: &Ui, values: &[u16]) {
+    if let Some(iter) = &ui.list_store_sensor.get_iter_first() {
+        let _: Vec<u32> = values
+            .iter()
+            .enumerate()
+            .map(|(i, val)| {
+                let reg = &ui
+                    .list_store_sensor
+                    .get_value(&iter, 0)
+                    .get::<u32>()
+                    .unwrap_or(Some(0))
+                    .unwrap_or(0);
+                // create the glib::value::Value from a u16 this is complicated (see supported types: https://gtk-rs.org/docs/glib/value/index.html)
+                let val = (*val as u32).to_value();
+                if i as u32 == *reg {
+                    &ui.list_store_sensor.set_value(&iter, 1, &val);
+                    &ui.list_store_sensor.iter_next(&iter);
+                }
+                0
+            })
+            .collect();
+        // Status log
+        log_status(
+            &ui,
+            StatusContext::PortOperation,
+            &format!("Sensor Update OK"),
+        );
+    } else {
+        log_status(
+            &ui,
+            StatusContext::Error,
+            &format!("Error while iterating Sensor list"),
+        );
     }
 }
