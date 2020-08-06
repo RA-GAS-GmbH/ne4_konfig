@@ -2,7 +2,13 @@ use super::gui::gtk3::UiCommand;
 use futures::channel::mpsc::*;
 use futures::prelude::*;
 use tokio::time::{timeout, Duration};
+use tokio_modbus::client::{
+    util::{reconnect_shared_context, NewContext, SharedContext},
+    Context,
+};
 use tokio_modbus::prelude::*;
+// use tokio_serial::{Serial, SerialPortSettings};
+use std::{cell::RefCell, future::Future, io::Error, pin::Pin, rc::Rc};
 use tokio_serial::*;
 
 /// Tokio thread commands
@@ -28,11 +34,43 @@ enum TokioState {
     Disconnected,
 }
 
+/// Serial Configuration
+#[derive(Debug)]
+struct SerialConfig {
+    path: String,
+    settings: SerialPortSettings,
+}
+
+/// Implementation Serial Configuration
+impl SerialConfig {
+    fn new() -> Self {
+        SerialConfig {
+            path: "/dev/ttyUSB0".into(),
+            settings: SerialPortSettings {
+                baud_rate: 9600,
+                ..Default::default()
+            },
+        }
+    }
+}
+
+/// Shared Context Serial Configuration
+impl NewContext for SerialConfig {
+    fn new_context(&self) -> Pin<Box<dyn Future<Output = std::result::Result<Context, Error>>>> {
+        let serial = Serial::from_path(&self.path, &self.settings);
+        Box::pin(async {
+            let port = serial?;
+            rtu::connect(port).await
+        })
+    }
+}
+
 /// TokioThread
 ///
 /// This struct represents the tokio thread.
 pub struct TokioThread {
     pub tokio_thread_sender: Sender<TokioCommand>,
+    shared_context: Rc<RefCell<SharedContext>>,
 }
 
 impl TokioThread {
@@ -171,8 +209,44 @@ impl TokioThread {
             });
         });
 
+        let serial_config = SerialConfig::new();
+        let shared_context = Rc::new(RefCell::new(SharedContext::new(
+            None,
+            Box::new(serial_config),
+        )));
+
         TokioThread {
             tokio_thread_sender,
+            shared_context,
+        }
+    }
+
+    /// Nullpunkt action
+    ///
+    /// This action is fired if the user clicks the Nullpunkt button.
+    async fn nullpunkt(&self, port: Option<String>, modbus_address: u8) -> tokio::io::Result<()> {
+        // let tty_path = port.clone().unwrap_or("".into());
+        if let Some(tty_path) = port {
+            let slave = Slave(modbus_address);
+            // let mut settings = SerialPortSettings::default();
+            // settings.baud_rate = 9600;
+            // let port = Serial::from_path(tty_path, &settings)?;
+            // let mut ctx = rtu::connect_slave(port, slave).await?;
+            if let Some(ctx) = self.shared_context.borrow().share_context() {
+                let mut ctx = ctx.borrow_mut();
+                ctx.set_slave(slave);
+                ctx.write_single_register(10, 11111).await
+            } else {
+                Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "Creation of Shared Context failed.",
+                ))
+            }
+        } else {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "No serial port found",
+            ))
         }
     }
 }
@@ -294,7 +368,7 @@ async fn new_modbus_address(
     }
 }
 
-/// Modbus register lesen
+/// Read Modbus Register 0x04
 async fn read_registers(
     port: Option<String>,
     modbus_address: u8,

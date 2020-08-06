@@ -29,7 +29,8 @@ pub struct Ui {
     button_nullpunkt: gtk::Button,
     button_reset: gtk::Button,
     button_sensor_working_mode: gtk::Button,
-    check_button_mcs: Option<gtk::CheckButton>,
+    #[cfg(feature = "ra-gas")]
+    check_button_mcs: gtk::CheckButton,
     combo_box_text_ports_changed_signal: glib::SignalHandlerId,
     combo_box_text_ports_map: Rc<RefCell<HashMap<String, u32>>>,
     combo_box_text_ports: gtk::ComboBoxText,
@@ -248,14 +249,7 @@ fn ui_init(app: &gtk::Application) {
     about_dialog.set_version(Some(PKG_VERSION));
     about_dialog.set_comments(Some(PKG_DESCRIPTION));
 
-    let mut check_button_mcs: Option<gtk::CheckButton> = None;
-    if cfg!(feature = "ra-gas") {
-        let hbox_new_modbus_address: gtk::Box = build!(builder, "hbox_new_modbus_address");
-        let button_mcs = gtk::CheckButton::with_label("MCS");
-        hbox_new_modbus_address.pack_end(&button_mcs, false, false, 0);
-        hbox_new_modbus_address.reorder_child(&button_mcs, 1);
-        check_button_mcs = Some(button_mcs);
-    }
+    let mut check_button_mcs: gtk::CheckButton = build!(builder, "check_button_mcs");
 
     application_window.set_application(Some(app));
 
@@ -463,7 +457,8 @@ fn ui_init(app: &gtk::Application) {
         button_nullpunkt,
         button_reset,
         button_sensor_working_mode,
-        check_button_mcs,
+        #[cfg(feature = "ra-gas")]
+        check_button_mcs: check_button_mcs.clone(),
         combo_box_text_ports_changed_signal,
         combo_box_text_ports_map,
         combo_box_text_ports,
@@ -483,6 +478,10 @@ fn ui_init(app: &gtk::Application) {
     };
 
     application_window.show_all();
+
+    if cfg!(not(feature = "ra-gas")) {
+        check_button_mcs.set_visible(false);
+    }
 
     // future on main thread has access to UI
     let future = {
@@ -707,10 +706,8 @@ fn enable_ui_elements(ui: &Ui) {
     ui.button_new_modbus_address.set_sensitive(true);
     ui.button_sensor_working_mode.set_sensitive(true);
 
-    match ui.check_button_mcs {
-        Some(ref button) => button.set_sensitive(true),
-        None => {}
-    }
+    #[cfg(feature = "ra-gas")]
+    ui.check_button_mcs.set_sensitive(true);
 }
 
 /// Disable UI elements
@@ -731,10 +728,8 @@ fn disable_ui_elements(ui: &Ui) {
     ui.button_new_modbus_address.set_sensitive(false);
     ui.button_sensor_working_mode.set_sensitive(false);
 
-    match ui.check_button_mcs {
-        Some(ref button) => button.set_sensitive(false),
-        None => {}
-    }
+    #[cfg(feature = "ra-gas")]
+    ui.check_button_mcs.set_sensitive(false);
 }
 
 /// Show InfoBar Info
