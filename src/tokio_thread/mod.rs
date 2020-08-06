@@ -158,7 +158,7 @@ impl TokioThread {
                             .send(UiCommand::UpdatePorts(available_ports.clone()))
                             .await;
                     } else if available_ports.len() < ports.len() {
-                        let _ = ui_event_sender2.clone().send(UiCommand::Disconnect).await;
+                        // let _ = ui_event_sender2.clone().send(UiCommand::Disconnect).await;
 
                         let _ = ui_event_sender2
                             .clone()

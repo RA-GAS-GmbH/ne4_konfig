@@ -48,6 +48,23 @@ pub struct Ui {
     rwreg_store: RwregStore,
 }
 
+impl Ui {
+    fn select_port(&self, num: u32) {
+        // Restore selected serial interface
+        signal_handler_block(
+            &self.combo_box_text_ports,
+            &self.combo_box_text_ports_changed_signal,
+        );
+        &self.combo_box_text_ports.set_active(Some(num));
+        signal_handler_unblock(
+            &self.combo_box_text_ports,
+            &self.combo_box_text_ports_changed_signal,
+        );
+        &self.combo_box_text_ports.set_sensitive(true);
+        &self.toggle_button_connect.set_sensitive(true);
+    }
+}
+
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 enum StatusContext {
     PortOperation,
@@ -499,7 +516,7 @@ fn ui_init(app: &gtk::Application) {
                         &ui.combo_box_text_sensor_working_mode.set_sensitive(true);
                         &ui.entry_modbus_address.set_sensitive(true);
                         &ui.button_reset.set_sensitive(true);
-
+                        // FIXME: Check if this is needed
                         tokio_thread_sender
                             .clone()
                             .try_send(TokioCommand::Disconnect)
@@ -531,6 +548,7 @@ fn ui_init(app: &gtk::Application) {
                     UiCommand::UpdatePorts(ports) => {
                         info!("Execute event UiCommand::UpdatePorts: {:?}", ports);
                         let active_port = ui.combo_box_text_ports.get_active().unwrap_or(0);
+                        let old_num_ports = ui.combo_box_text_ports_map.borrow().len();
                         // Update the port listing and other UI elements
                         ui.combo_box_text_ports.remove_all();
                         ui.combo_box_text_ports_map.borrow_mut().clear();
@@ -543,28 +561,53 @@ fn ui_init(app: &gtk::Application) {
                             ui.combo_box_text_ports.set_sensitive(false);
                             ui.toggle_button_connect.set_sensitive(false);
                         } else {
-                            enable_ui_elements(&ui);
                             for (i, p) in (0u32..).zip(ports.clone().into_iter()) {
                                 ui.combo_box_text_ports.append(None, &p);
                                 ui.combo_box_text_ports_map.borrow_mut().insert(p, i);
                             }
-                            signal_handler_block(
-                                &ui.combo_box_text_ports,
-                                &ui.combo_box_text_ports_changed_signal,
+                            // More or Less ports
+                            let num_ports = ui.combo_box_text_ports_map.borrow().len();
+                            debug!(
+                                "current ports: {}, old num ports: {}",
+                                num_ports, old_num_ports
                             );
-                            ui.combo_box_text_ports.set_active(Some(active_port));
-                            signal_handler_unblock(
-                                &ui.combo_box_text_ports,
-                                &ui.combo_box_text_ports_changed_signal,
-                            );
-                            ui.combo_box_text_ports.set_sensitive(true);
-                            ui.toggle_button_connect.set_sensitive(true);
+                            // serial ports lost
+                            if num_ports < old_num_ports {
+                                tokio_thread_sender
+                                    .clone()
+                                    .try_send(TokioCommand::Disconnect)
+                                    .expect("Faild to send tokio command");
 
-                            log_status(
-                                &ui,
-                                StatusContext::PortOperation,
-                                &format!("Ports gefunden: {:?}", ports),
-                            );
+                                // Restore selected serial interface
+                                ui.select_port(0);
+
+                                // Tell the user
+                                log_status(
+                                    &ui,
+                                    StatusContext::PortOperation,
+                                    &format!(
+                                        "Schnittstelle verloren! Aktuelle Schnittstellen: {:?}",
+                                        ports
+                                    ),
+                                );
+                            // New serial port found
+                            } else if num_ports > old_num_ports {
+                                // Enable graphical elements
+                                enable_ui_elements(&ui);
+
+                                // Restore selected serial interface
+                                ui.select_port(active_port + 1);
+
+                                // Tell the user
+                                log_status(
+                                    &ui,
+                                    StatusContext::PortOperation,
+                                    &format!("Neue Schnittstelle gefunden: {:?}", ports),
+                                );
+                            } else if num_ports == old_num_ports {
+                                // Restore selected serial interface
+                                ui.select_port(active_port);
+                            }
                         }
                     }
                     // FIXME: kann weg
