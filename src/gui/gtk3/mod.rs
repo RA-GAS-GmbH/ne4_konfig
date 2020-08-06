@@ -627,6 +627,8 @@ fn ui_init(app: &gtk::Application) {
                         debug!("{:?}", values);
                         match values {
                             Ok(values) => {
+                                // Update Sensor Typ
+                                &ui.label_sensor_type_value.set_text("RA-GAS NE4_MOD_BUS");
                                 // Update Auswahlfeld Arbeitsweise
                                 &ui.combo_box_text_sensor_working_mode
                                     .set_active_id(Some(&values[1].to_string()));
