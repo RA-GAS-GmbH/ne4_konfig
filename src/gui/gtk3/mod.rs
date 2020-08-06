@@ -75,17 +75,18 @@ enum StatusContext {
 #[derive(Debug)]
 pub enum UiCommand {
     DisableConnectUiElements,
-    Error(String),
     Disconnect,
     EnableConnectUiElements,
+    Error(String),
+    Messgas(tokio::io::Result<()>),
+    NewModbusAddress(tokio::io::Result<()>),
+    NewWorkingMode(tokio::io::Result<()>),
+    Nullpunkt(tokio::io::Result<()>),
+    // Reconnect,
     UpdatePorts(Vec<String>),
     UpdateSensorType(String),
     UpdateSensorValue(u16),
     UpdateSensorValues(Result<Vec<u16>, mio_serial::Error>),
-    NewWorkingMode(tokio::io::Result<()>),
-    NewModbusAddress(tokio::io::Result<()>),
-    Nullpunkt(tokio::io::Result<()>),
-    Messgas(tokio::io::Result<()>),
 }
 
 pub fn launch() {
@@ -544,6 +545,17 @@ fn ui_init(app: &gtk::Application) {
                             &format!("Error: {:?}", e),
                         );
                     }
+                    // UiCommand::Reconnect => {
+                    //     tokio_thread_sender
+                    //         .clone()
+                    //         .try_send(TokioCommand::Connect)
+                    //         .expect("Failed to send tokio command");
+                    //     log_status(
+                    //         &ui,
+                    //         StatusContext::PortOperation,
+                    //         &format!("Neuverbindung!"),
+                    //     );
+                    // }
                     UiCommand::UpdatePorts(ports) => {
                         info!("Execute event UiCommand::UpdatePorts: {:?}", ports);
                         let active_port = ui.combo_box_text_ports.get_active().unwrap_or(0);
@@ -627,7 +639,8 @@ fn ui_init(app: &gtk::Application) {
                         match values {
                             Ok(values) => {
                                 // Update Sensor Typ
-                                &ui.label_sensor_type_value.set_text("RA-GAS NE4_MOD_BUS");
+                                &ui.label_sensor_type_value
+                                    .set_text("RA-GAS GmbH - NE4_MOD_BUS");
                                 // Update Auswahlfeld Arbeitsweise
                                 &ui.combo_box_text_sensor_working_mode
                                     .set_active_id(Some(&values[1].to_string()));
