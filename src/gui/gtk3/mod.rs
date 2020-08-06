@@ -6,12 +6,14 @@ use glib::clone;
 use glib::{signal_handler_block, signal_handler_unblock};
 use gtk::prelude::*;
 use gtk::{Application, InfoBarExt};
+use rwreg_store::RwregStore;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
 #[macro_use]
 pub mod macros;
+pub mod rwreg_store;
 pub mod treestore_values;
 
 const PKG_VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -42,6 +44,8 @@ pub struct Ui {
     statusbar_application: gtk::Statusbar,
     statusbar_contexts: HashMap<StatusContext, u32>,
     toggle_button_connect: gtk::ToggleButton,
+    #[cfg(feature = "ra-gas")]
+    rwreg_store: RwregStore,
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -175,6 +179,9 @@ fn ui_init(app: &gtk::Application) {
         combo_box_text_sensor_working_mode.append(Some(&id.to_string()), &name);
     }
 
+    // Notebook
+    let notebook_sensor: gtk::Notebook = build!(builder, "notebook_sensor");
+
     // Modbus Adresse
     let entry_modbus_address: gtk::Entry = build!(builder, "entry_modbus_address");
     let entry_new_modbus_address: gtk::Entry = build!(builder, "entry_new_modbus_address");
@@ -190,6 +197,17 @@ fn ui_init(app: &gtk::Application) {
 
     // ListStore Sensor Values
     let list_store_sensor: gtk::ListStore = build!(builder, "list_store_sensor");
+
+    // Rwreg
+    // This has to be declared outside of the following feature-block,
+    // because the Ui struct wouldn't recognize the variable `rwreg_store` otherwise.
+    let rwreg_store = RwregStore::new();
+    #[cfg(feature = "ra-gas")]
+    {
+        let rwreg_window = rwreg_store.build_ui();
+        let label = gtk::Label::new(Some("Rwreg Lese/Schreib(Read/Write)-Register"));
+        notebook_sensor.append_page(&rwreg_window, Some(&label));
+    }
 
     let toggle_button_connect: gtk::ToggleButton = build!(builder, "toggle_button_connect");
     let label_sensor_value_value: gtk::Label = build!(builder, "label_sensor_value_value");
@@ -443,6 +461,8 @@ fn ui_init(app: &gtk::Application) {
         statusbar_application,
         statusbar_contexts: context_map,
         toggle_button_connect,
+        #[cfg(feature = "ra-gas")]
+        rwreg_store,
     };
 
     application_window.show_all();
