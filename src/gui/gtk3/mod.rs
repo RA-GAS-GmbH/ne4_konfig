@@ -101,38 +101,42 @@ fn ui_init(app: &gtk::Application) {
     let infobar_error: gtk::InfoBar = build!(builder, "infobar_error");
     let infobar_question: gtk::InfoBar = build!(builder, "infobar_question");
 
-    let button_close_infobar_info: gtk::Button = infobar_info
-        .add_button("Ok", gtk::ResponseType::Close)
-        .unwrap();
-    let _ = button_close_infobar_info.connect_clicked(clone!(
-    @strong infobar_info
-    => move |_| {
-        &infobar_info.hide();
-    }));
-    let button_close_infobar_warning: gtk::Button = infobar_warning
-        .add_button("Ok", gtk::ResponseType::Close)
-        .unwrap();
-    let _ = button_close_infobar_warning.connect_clicked(clone!(
-    @strong infobar_warning
-    => move |_| {
-        &infobar_warning.hide();
-    }));
-    let button_close_infobar_error: gtk::Button = infobar_error
-        .add_button("Ok", gtk::ResponseType::Close)
-        .unwrap();
-    let _ = button_close_infobar_error.connect_clicked(clone!(
-    @strong infobar_error
-    => move |_| {
-        &infobar_error.hide();
-    }));
-    let button_close_infobar_question: gtk::Button = infobar_question
-        .add_button("Ok", gtk::ResponseType::Close)
-        .unwrap();
-    let _ = button_close_infobar_question.connect_clicked(clone!(
-    @strong infobar_question
-    => move |_| {
-        &infobar_question.hide();
-    }));
+    // Infobar callbacks
+    if let Some(button_close_infobar_info) = infobar_info.add_button("Ok", gtk::ResponseType::Close)
+    {
+        let _ = button_close_infobar_info.connect_clicked(clone!(
+        @strong infobar_info
+        => move |_| {
+            &infobar_info.hide();
+        }));
+    }
+    if let Some(button_close_infobar_warning) =
+        infobar_warning.add_button("Ok", gtk::ResponseType::Close)
+    {
+        let _ = button_close_infobar_warning.connect_clicked(clone!(
+        @strong infobar_warning
+        => move |_| {
+            &infobar_warning.hide();
+        }));
+    }
+    if let Some(button_close_infobar_error) =
+        infobar_error.add_button("Ok", gtk::ResponseType::Close)
+    {
+        let _ = button_close_infobar_error.connect_clicked(clone!(
+        @strong infobar_error
+        => move |_| {
+            &infobar_error.hide();
+        }));
+    }
+    if let Some(button_close_infobar_question) =
+        infobar_question.add_button("Ok", gtk::ResponseType::Close)
+    {
+        let _ = button_close_infobar_question.connect_clicked(clone!(
+        @strong infobar_question
+        => move |_| {
+            &infobar_question.hide();
+        }));
+    }
 
     // Statusbar
     let statusbar_application: gtk::Statusbar = build!(builder, "statusbar_application");
@@ -506,6 +510,7 @@ fn ui_init(app: &gtk::Application) {
                     }
                     UiCommand::UpdatePorts(ports) => {
                         info!("Execute event UiCommand::UpdatePorts: {:?}", ports);
+                        let active_port = ui.combo_box_text_ports.get_active().unwrap_or(0);
                         // Update the port listing and other UI elements
                         ui.combo_box_text_ports.remove_all();
                         ui.combo_box_text_ports_map.borrow_mut().clear();
@@ -527,7 +532,7 @@ fn ui_init(app: &gtk::Application) {
                                 &ui.combo_box_text_ports,
                                 &ui.combo_box_text_ports_changed_signal,
                             );
-                            ui.combo_box_text_ports.set_active(Some(0));
+                            ui.combo_box_text_ports.set_active(Some(active_port));
                             signal_handler_unblock(
                                 &ui.combo_box_text_ports,
                                 &ui.combo_box_text_ports_changed_signal,
