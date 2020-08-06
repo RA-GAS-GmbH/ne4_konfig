@@ -8,7 +8,14 @@ use tokio_modbus::client::{
 };
 use tokio_modbus::prelude::*;
 // use tokio_serial::{Serial, SerialPortSettings};
-use std::{cell::RefCell, future::Future, io::Error, pin::Pin, rc::Rc};
+use std::{
+    cell::RefCell,
+    future::Future,
+    io::Error,
+    pin::Pin,
+    rc::Rc,
+    sync::{Arc, Mutex},
+};
 use tokio_serial::*;
 
 /// Tokio thread commands
@@ -65,16 +72,215 @@ impl NewContext for SerialConfig {
     }
 }
 
+struct Ne4Client {
+    serial_config: SerialConfig,
+}
+
+impl Ne4Client {
+    fn new() -> Self {
+        let serial_config = SerialConfig {
+            path: "/dev/ttyUSB0".into(),
+            settings: SerialPortSettings {
+                baud_rate: 9600,
+                ..Default::default()
+            },
+        };
+        Ne4Client { serial_config }
+    }
+
+    /// Nullpunkt action
+    ///
+    /// This action is fired if the user clicks the Nullpunkt button.
+    async fn nullpunkt(&self, port: Option<String>, modbus_address: u8) -> tokio::io::Result<()> {
+        if let Some(tty_path) = port {
+            let slave = Slave(modbus_address);
+            let port = Serial::from_path(tty_path, &self.serial_config.settings)?;
+            let mut ctx = rtu::connect_slave(port, slave).await?;
+            ctx.set_slave(slave);
+            ctx.write_single_register(10, 11111).await
+        } else {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "No serial port found",
+            ))
+        }
+    }
+
+    /// Messgas action
+    ///
+    /// This action is fired if the user clicks the Messgas button.
+    async fn messgas(&self, port: Option<String>, modbus_address: u8) -> tokio::io::Result<()> {
+        if let Some(tty_path) = port {
+            let slave = Slave(modbus_address);
+            let port = Serial::from_path(tty_path, &self.serial_config.settings)?;
+            let mut ctx = rtu::connect_slave(port, slave).await?;
+            ctx.set_slave(slave);
+            ctx.write_single_register(12, 11111).await
+        } else {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "No serial port found",
+            ))
+        }
+    }
+
+    /// New working mode action
+    ///
+    /// This action is fired if the user selects a new working mode (Arbeitsweise in german)
+    /// and hits the update button.
+    async fn new_working_mode(
+        &self,
+        port: Option<String>,
+        modbus_address: u8,
+        working_mode: u16,
+    ) -> tokio::io::Result<()> {
+        if let Some(tty_path) = port {
+            let slave = Slave(modbus_address);
+            let port = Serial::from_path(tty_path, &self.serial_config.settings)?;
+            let mut ctx = rtu::connect_slave(port, slave).await?;
+            ctx.set_slave(slave);
+            // Entsperren
+            let _ = ctx.write_single_register(49, 9876).await;
+            // Save new working mode
+            ctx.write_single_register(99, working_mode).await
+        } else {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "No serial port found",
+            ))
+        }
+    }
+
+    /// Set new modbus
+    ///
+    /// This function sets a new modbus address on sensor platine.
+    /// **The plaitne has to been unlocked first!**
+    async fn new_modbus_address(
+        &self,
+        port: Option<String>,
+        modbus_address: u8,
+        new_modbus_address: u8,
+    ) -> tokio::io::Result<()> {
+        if let Some(tty_path) = port {
+            let slave = Slave(modbus_address);
+            let port = Serial::from_path(tty_path, &self.serial_config.settings)?;
+            let mut ctx = rtu::connect_slave(port, slave).await?;
+            ctx.set_slave(slave);
+            // Entsperren
+            let _ = ctx.write_single_register(49, 9876).await;
+            // Save new modbus address
+            ctx.write_single_register(50, new_modbus_address.into())
+                .await
+        } else {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "No serial port found",
+            ))
+        }
+    }
+
+    /// Read Modbus Register 0x04
+    ///
+    ///
+    async fn read_registers(
+        &self,
+        port: Option<String>,
+        modbus_address: u8,
+        ui_event_sender: Sender<UiCommand>,
+        // FIXME: Implement state in Ne4 Client
+        state: std::sync::Arc<tokio::sync::Mutex<TokioState>>,
+    ) -> tokio::io::Result<()> {
+        if let Some(tty_path) = port {
+            let slave = Slave(modbus_address);
+            let port = Serial::from_path(tty_path, &self.serial_config.settings)?;
+            let mut ctx = rtu::connect_slave(port, slave).await?;
+            ctx.set_slave(slave);
+
+            tokio::task::spawn(async move {
+                'update: loop {
+                    let state = state.lock().await;
+                    if *state == TokioState::Disconnected {
+                        break;
+                    }
+
+                    let mut registers = vec![0u16; 50];
+
+                    for (i, reg) in registers.iter_mut().enumerate() {
+                        match timeout(
+                            Duration::from_millis(3000),
+                            ctx.read_input_registers(i as u16, 1),
+                        )
+                        .await
+                        {
+                            Ok(value) => match value {
+                                Ok(value) => *reg = value[0],
+                                Err(e) => {
+                                    ui_event_sender
+                                        .clone()
+                                        .send(UiCommand::Disconnect)
+                                        .await
+                                        .expect("Failed to send Ui command");
+
+                                    ui_event_sender
+                                        .clone()
+                                        .send(UiCommand::Error(format!(
+                                            "Register {} konnte nicht gelesen werden: {}",
+                                            i,
+                                            e.to_string()
+                                        )))
+                                        .await
+                                        .expect("Failed to send Ui command");
+                                    break 'update;
+                                }
+                            },
+                            Err(_) => {
+                                ui_event_sender
+                                    .clone()
+                                    .send(UiCommand::Disconnect)
+                                    .await
+                                    .expect("Failed to send Ui command");
+
+                                ui_event_sender
+                                    .clone()
+                                    .send(UiCommand::Error(format!(
+                                        "Timeout beim lesen aller Register"
+                                    )))
+                                    .await
+                                    .expect("Failed to send Ui command");
+
+                                break 'update;
+                            }
+                        };
+                    }
+                    ui_event_sender
+                        .clone()
+                        .send(UiCommand::UpdateSensorValues(Ok(registers)))
+                        .await
+                        .expect("Failed to send Ui command");
+                }
+            });
+
+            Ok(())
+        } else {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "No serial port found",
+            ))
+        }
+    }
+}
+
 /// TokioThread
 ///
 /// This struct represents the tokio thread.
 pub struct TokioThread {
     pub tokio_thread_sender: Sender<TokioCommand>,
-    shared_context: Rc<RefCell<SharedContext>>,
 }
 
 impl TokioThread {
     pub fn new(ui_event_sender: Sender<UiCommand>) -> Self {
+        let ne4_client = Ne4Client::new();
+
         let (tokio_thread_sender, mut tokio_thread_receiver) = futures::channel::mpsc::channel(0);
         // Clone the ui_event_sender. This is used in a second thread, see below.
         let ui_event_sender2 = ui_event_sender.clone();
@@ -91,14 +297,15 @@ impl TokioThread {
                     match event {
                         TokioCommand::UpdateSensor(port, modbus_address) => {
                             info!("Execute event TokioCommand::UpdateSensor");
-                            read_registers(
-                                port,
-                                modbus_address,
-                                ui_event_sender.clone(),
-                                state.clone(),
-                            )
-                            .await
-                            .expect("Could not start read registers loop");
+                            ne4_client
+                                .read_registers(
+                                    port,
+                                    modbus_address,
+                                    ui_event_sender.clone(),
+                                    state.clone(),
+                                )
+                                .await
+                                .expect("Could not start read registers loop");
                         }
                         TokioCommand::Connect => {
                             info!("Execute event TokioCommand::Connect");
@@ -135,7 +342,9 @@ impl TokioThread {
                             info!("Execute event TokioCommand::Nullpunkt");
                             ui_event_sender
                                 .clone()
-                                .send(UiCommand::Nullpunkt(nullpunkt(port, modbus_address).await))
+                                .send(UiCommand::Nullpunkt(
+                                    ne4_client.nullpunkt(port, modbus_address).await,
+                                ))
                                 .await
                                 .expect("Failed to send Ui command")
                         }
@@ -143,7 +352,9 @@ impl TokioThread {
                             info!("Execute event TokioCommand::Messgas");
                             ui_event_sender
                                 .clone()
-                                .send(UiCommand::Messgas(messgas(port, modbus_address).await))
+                                .send(UiCommand::Messgas(
+                                    ne4_client.messgas(port, modbus_address).await,
+                                ))
                                 .await
                                 .expect("Failed to send Ui command")
                         }
@@ -152,7 +363,9 @@ impl TokioThread {
                             ui_event_sender
                                 .clone()
                                 .send(UiCommand::NewWorkingMode(
-                                    new_working_mode(port, modbus_address, working_mode).await,
+                                    ne4_client
+                                        .new_working_mode(port, modbus_address, working_mode)
+                                        .await,
                                 ))
                                 .await
                                 .expect("Failed to send Ui command")
@@ -162,7 +375,9 @@ impl TokioThread {
                             ui_event_sender
                                 .clone()
                                 .send(UiCommand::NewModbusAddress(
-                                    new_modbus_address(port, modbus_address, new_modbus).await,
+                                    ne4_client
+                                        .new_modbus_address(port, modbus_address, new_modbus)
+                                        .await,
                                 ))
                                 .await
                                 .expect("Failed to send Ui command")
@@ -209,44 +424,8 @@ impl TokioThread {
             });
         });
 
-        let serial_config = SerialConfig::new();
-        let shared_context = Rc::new(RefCell::new(SharedContext::new(
-            None,
-            Box::new(serial_config),
-        )));
-
         TokioThread {
             tokio_thread_sender,
-            shared_context,
-        }
-    }
-
-    /// Nullpunkt action
-    ///
-    /// This action is fired if the user clicks the Nullpunkt button.
-    async fn nullpunkt(&self, port: Option<String>, modbus_address: u8) -> tokio::io::Result<()> {
-        // let tty_path = port.clone().unwrap_or("".into());
-        if let Some(tty_path) = port {
-            let slave = Slave(modbus_address);
-            // let mut settings = SerialPortSettings::default();
-            // settings.baud_rate = 9600;
-            // let port = Serial::from_path(tty_path, &settings)?;
-            // let mut ctx = rtu::connect_slave(port, slave).await?;
-            if let Some(ctx) = self.shared_context.borrow().share_context() {
-                let mut ctx = ctx.borrow_mut();
-                ctx.set_slave(slave);
-                ctx.write_single_register(10, 11111).await
-            } else {
-                Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "Creation of Shared Context failed.",
-                ))
-            }
-        } else {
-            Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "No serial port found",
-            ))
         }
     }
 }
@@ -269,189 +448,4 @@ pub fn get_ports() -> Vec<String> {
     ports.retain(|p| p != "/dev/ttyS0");
 
     ports
-}
-
-/// Nullpunkt action
-///
-/// This action is fired if the user clicks the Nullpunkt button.
-async fn nullpunkt(port: Option<String>, modbus_address: u8) -> tokio::io::Result<()> {
-    // let tty_path = port.clone().unwrap_or("".into());
-    if let Some(tty_path) = port {
-        let slave = Slave(modbus_address);
-        let mut settings = SerialPortSettings::default();
-        settings.baud_rate = 9600;
-        let port = Serial::from_path(tty_path, &settings)?;
-        let mut ctx = rtu::connect_slave(port, slave).await?;
-
-        ctx.write_single_register(10, 11111).await
-    } else {
-        Err(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            "No serial port found",
-        ))
-    }
-}
-
-/// Messgas action
-///
-/// This action is fired if the user clicks the Messgas button.
-async fn messgas(port: Option<String>, modbus_address: u8) -> tokio::io::Result<()> {
-    // let tty_path = port.clone().unwrap_or("".into());
-    if let Some(tty_path) = port {
-        let slave = Slave(modbus_address);
-        let mut settings = SerialPortSettings::default();
-        settings.baud_rate = 9600;
-        let port = Serial::from_path(tty_path, &settings)?;
-        let mut ctx = rtu::connect_slave(port, slave).await?;
-
-        ctx.write_single_register(12, 11111).await
-    } else {
-        Err(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            "No serial port found",
-        ))
-    }
-}
-
-/// New working mode action
-///
-/// This action is fired if the user selects a new working mode (Arbeitsweise in german)
-/// and hits the update button.
-async fn new_working_mode(
-    port: Option<String>,
-    modbus_address: u8,
-    working_mode: u16,
-) -> tokio::io::Result<()> {
-    // let tty_path = port.clone().unwrap_or("".into());
-    if let Some(tty_path) = port {
-        let slave = Slave(modbus_address);
-        let mut settings = SerialPortSettings::default();
-        settings.baud_rate = 9600;
-        let port = Serial::from_path(tty_path, &settings)?;
-        let mut ctx = rtu::connect_slave(port, slave).await?;
-
-        // Entsperren
-        let _ = ctx.write_single_register(49, 9876).await;
-        // Arbeitsmode umstellen
-        ctx.write_single_register(99, working_mode).await
-    } else {
-        Err(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            "No serial port found",
-        ))
-    }
-}
-
-async fn new_modbus_address(
-    port: Option<String>,
-    modbus_address: u8,
-    new_modbus_address: u8,
-) -> tokio::io::Result<()> {
-    // let tty_path = port.clone().unwrap_or("".into());
-    if let Some(tty_path) = port {
-        let slave = Slave(modbus_address);
-        let mut settings = SerialPortSettings::default();
-        settings.baud_rate = 9600;
-        let port = Serial::from_path(tty_path, &settings)?;
-        let mut ctx = rtu::connect_slave(port, slave).await?;
-
-        // Entsperren
-        let _ = ctx.write_single_register(49, 9876).await;
-        // Arbeitsmode umstellen
-        ctx.write_single_register(50, new_modbus_address.into())
-            .await
-    } else {
-        Err(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            "No serial port found",
-        ))
-    }
-}
-
-/// Read Modbus Register 0x04
-async fn read_registers(
-    port: Option<String>,
-    modbus_address: u8,
-    ui_event_sender: Sender<UiCommand>,
-    state: std::sync::Arc<tokio::sync::Mutex<TokioState>>,
-) -> tokio::io::Result<()> {
-    // TODO: Check if thread was alreaddy started
-
-    if let Some(tty_path) = port {
-        let slave = Slave(modbus_address);
-        let mut settings = SerialPortSettings::default();
-        settings.baud_rate = 9600;
-        let port = Serial::from_path(tty_path, &settings)?;
-        let mut ctx = rtu::connect_slave(port, slave).await?;
-
-        tokio::task::spawn(async move {
-            'update: loop {
-                let state = state.lock().await;
-                if *state == TokioState::Disconnected {
-                    break;
-                }
-
-                let mut registers = vec![0u16; 50];
-
-                for (i, reg) in registers.iter_mut().enumerate() {
-                    match timeout(
-                        Duration::from_millis(3000),
-                        ctx.read_input_registers(i as u16, 1),
-                    )
-                    .await
-                    {
-                        Ok(value) => match value {
-                            Ok(value) => *reg = value[0],
-                            Err(e) => {
-                                ui_event_sender
-                                    .clone()
-                                    .send(UiCommand::Disconnect)
-                                    .await
-                                    .expect("Failed to send Ui command");
-
-                                ui_event_sender
-                                    .clone()
-                                    .send(UiCommand::Error(format!(
-                                        "Register {} konnte nicht gelesen werden: {}",
-                                        i,
-                                        e.to_string()
-                                    )))
-                                    .await
-                                    .expect("Failed to send Ui command");
-                                break 'update;
-                            }
-                        },
-                        Err(_) => {
-                            ui_event_sender
-                                .clone()
-                                .send(UiCommand::Disconnect)
-                                .await
-                                .expect("Failed to send Ui command");
-
-                            ui_event_sender
-                                .clone()
-                                .send(UiCommand::Error(format!(
-                                    "Timeout beim lesen aller Register"
-                                )))
-                                .await
-                                .expect("Failed to send Ui command");
-                            break 'update;
-                        }
-                    };
-                }
-                ui_event_sender
-                    .clone()
-                    .send(UiCommand::UpdateSensorValues(Ok(registers)))
-                    .await
-                    .expect("Failed to send Ui command");
-            }
-        });
-
-        Ok(())
-    } else {
-        Err(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            "No serial port found",
-        ))
-    }
 }
