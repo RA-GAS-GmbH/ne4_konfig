@@ -87,6 +87,7 @@ pub enum UiCommand {
     UpdateSensorType(String),
     UpdateSensorValue(u16),
     UpdateSensorValues(Result<Vec<u16>, mio_serial::Error>),
+    UpdateSensorRwregValues(Result<Vec<u16>, mio_serial::Error>),
 }
 
 pub fn launch() {
@@ -221,6 +222,7 @@ fn ui_init(app: &gtk::Application) {
     // This has to be declared outside of the following feature-block,
     // because the Ui struct wouldn't recognize the variable `rwreg_store` otherwise.
     let rwreg_store = RwregStore::new();
+    rwreg_store.fill_treestore();
     #[cfg(feature = "ra-gas")]
     {
         let rwreg_window = rwreg_store.build_ui();
@@ -632,6 +634,34 @@ fn ui_init(app: &gtk::Application) {
                         //     &format!("Update Sensor Value: {:?}", &value),
                         // );
                     }
+                    UiCommand::NewModbusAddress(value) => {
+                        log_status(
+                            &ui,
+                            StatusContext::PortOperation,
+                            &format!("Neue Modbus Adresse: {:?}", &value),
+                        );
+                    }
+                    UiCommand::NewWorkingMode(value) => {
+                        log_status(
+                            &ui,
+                            StatusContext::PortOperation,
+                            &format!("Arbeitsweise: {:?}", &value),
+                        );
+                    }
+                    UiCommand::Nullpunkt(value) => {
+                        log_status(
+                            &ui,
+                            StatusContext::PortOperation,
+                            &format!("Nullpunkt: {:?}", &value),
+                        );
+                    }
+                    UiCommand::Messgas(value) => {
+                        log_status(
+                            &ui,
+                            StatusContext::PortOperation,
+                            &format!("Messgas: {:?}", &value),
+                        );
+                    }
                     UiCommand::UpdateSensorValues(values) => {
                         info!("Execute event UiCommand::UpdateSensorValues");
                         // show_info(&ui, "Not working jeat!");
@@ -662,33 +692,25 @@ fn ui_init(app: &gtk::Application) {
                             }
                         }
                     }
-                    UiCommand::NewModbusAddress(value) => {
-                        log_status(
-                            &ui,
-                            StatusContext::PortOperation,
-                            &format!("Neue Modbus Adresse: {:?}", &value),
-                        );
-                    }
-                    UiCommand::NewWorkingMode(value) => {
-                        log_status(
-                            &ui,
-                            StatusContext::PortOperation,
-                            &format!("Arbeitsweise: {:?}", &value),
-                        );
-                    }
-                    UiCommand::Nullpunkt(value) => {
-                        log_status(
-                            &ui,
-                            StatusContext::PortOperation,
-                            &format!("Nullpunkt: {:?}", &value),
-                        );
-                    }
-                    UiCommand::Messgas(value) => {
-                        log_status(
-                            &ui,
-                            StatusContext::PortOperation,
-                            &format!("Messgas: {:?}", &value),
-                        );
+                    UiCommand::UpdateSensorRwregValues(values) => {
+                        info!("Execute event UiCommand::UpdateSensorValues");
+                        // show_info(&ui, "Not working jeat!");
+                        debug!("{:?}", values);
+                        match values {
+                            Ok(values) => {
+                                #[cfg(feature = "ra-gas")]
+                                // Update TreeStore
+                                &ui.rwreg_store.update_treestore(&ui, &values);
+                            }
+                            Err(err) => {
+                                // Status log
+                                log_status(
+                                    &ui,
+                                    StatusContext::Error,
+                                    &format!("Error while Sensor Update: {}", err),
+                                );
+                            }
+                        }
                     }
                 }
             }

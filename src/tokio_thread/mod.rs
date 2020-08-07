@@ -179,10 +179,103 @@ impl Ne4Client {
         }
     }
 
-    /// Read Modbus Register 0x04
+    /// Read Modbus Holding Registers 0x03
+    ///
+    /// The NE4 has 100 registers.
+    async fn read_holding_registers(
+        &self,
+        port: Option<String>,
+        modbus_address: u8,
+        ui_event_sender: Sender<UiCommand>,
+        // FIXME: Implement state in Ne4 Client
+        state: std::sync::Arc<tokio::sync::Mutex<TokioState>>,
+    ) -> tokio::io::Result<()> {
+        if let Some(tty_path) = port {
+            let slave = Slave(modbus_address);
+            let port = Serial::from_path(tty_path, &self.serial_config.settings)?;
+            let mut ctx = rtu::connect_slave(port, slave).await?;
+            ctx.set_slave(slave);
+
+            tokio::task::spawn(async move {
+                'update: loop {
+                    let state = state.lock().await;
+                    if *state == TokioState::Disconnected {
+                        break;
+                    }
+
+                    let mut registers = vec![0u16; 100];
+
+                    // Entsperren
+                    let _ = ctx.write_single_register(49, 9876).await;
+
+                    for (i, reg) in registers.iter_mut().enumerate() {
+                        match timeout(
+                            Duration::from_millis(3000),
+                            ctx.read_holding_registers(i as u16, 1),
+                        )
+                        .await
+                        {
+                            Ok(value) => match value {
+                                Ok(value) => *reg = value[0],
+                                Err(e) => {
+                                    ui_event_sender
+                                        .clone()
+                                        .send(UiCommand::Disconnect)
+                                        .await
+                                        .expect("Failed to send Ui command");
+
+                                    ui_event_sender
+                                        .clone()
+                                        .send(UiCommand::Error(format!(
+                                            "Register {} konnte nicht gelesen werden: {}",
+                                            i,
+                                            e.to_string()
+                                        )))
+                                        .await
+                                        .expect("Failed to send Ui command");
+                                    break 'update;
+                                }
+                            },
+                            Err(_) => {
+                                ui_event_sender
+                                    .clone()
+                                    .send(UiCommand::Disconnect)
+                                    .await
+                                    .expect("Failed to send Ui command");
+
+                                ui_event_sender
+                                    .clone()
+                                    .send(UiCommand::Error(format!(
+                                        "Timeout beim lesen aller Register"
+                                    )))
+                                    .await
+                                    .expect("Failed to send Ui command");
+
+                                break 'update;
+                            }
+                        };
+                    }
+                    ui_event_sender
+                        .clone()
+                        .send(UiCommand::UpdateSensorRwregValues(Ok(registers)))
+                        .await
+                        .expect("Failed to send Ui command");
+                }
+            });
+
+            Ok(())
+        } else {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "No serial port found",
+            ))
+        }
+    }
+
+    /// Read Modbus Input Registers 0x04
     ///
     ///
-    async fn read_registers(
+    async fn read_input_registers(
         &self,
         port: Option<String>,
         modbus_address: u8,
@@ -297,15 +390,26 @@ impl TokioThread {
                     match event {
                         TokioCommand::UpdateSensor(port, modbus_address) => {
                             info!("Execute event TokioCommand::UpdateSensor");
+                            #[cfg(feature = "ra-gas")]
                             ne4_client
-                                .read_registers(
-                                    port,
+                                .read_holding_registers(
+                                    port.clone(),
                                     modbus_address,
                                     ui_event_sender.clone(),
                                     state.clone(),
                                 )
                                 .await
                                 .expect("Could not start read registers loop");
+
+                            // ne4_client
+                            //     .read_input_registers(
+                            //         port,
+                            //         modbus_address,
+                            //         ui_event_sender.clone(),
+                            //         state.clone(),
+                            //     )
+                            //     .await
+                            //     .expect("Could not start read registers loop");
                         }
                         TokioCommand::Connect => {
                             info!("Execute event TokioCommand::Connect");

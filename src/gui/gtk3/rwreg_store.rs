@@ -1,3 +1,4 @@
+use crate::gui::gtk3::Ui;
 /// Treestore and logic for Rwreg's
 use gio::prelude::*;
 use gtk::prelude::*;
@@ -9,7 +10,7 @@ pub struct RwregStore {
 impl RwregStore {
     pub fn new() -> Self {
         let store = gtk::TreeStore::new(&[
-            glib::Type::I32,
+            glib::Type::U32,
             glib::Type::String,
             glib::Type::String,
             glib::Type::String,
@@ -18,7 +19,7 @@ impl RwregStore {
         RwregStore { store }
     }
 
-    fn fill_treestore(&self) {
+    pub fn fill_treestore(&self) {
         self.store.insert_with_values(
             None,
             None,
@@ -383,8 +384,8 @@ impl RwregStore {
     }
 
     pub fn build_ui(&self) -> gtk::ScrolledWindow {
-        self.fill_treestore();
-
+        // self.fill_treestore();
+        //
         let sortable_store = gtk::TreeModelSort::new(&self.store);
         let treeview = gtk::TreeView::with_model(&sortable_store);
 
@@ -447,6 +448,31 @@ impl RwregStore {
         scrolled_window.add(&treeview);
 
         scrolled_window
+    }
+
+    /// Update Treestore values with values received via modbus
+    pub fn update_treestore(&self, ui: &Ui, values: &[u16]) {
+        if let Some(iter) = self.store.get_iter_first() {
+            let _: Vec<u16> = values
+                .iter()
+                .enumerate()
+                .map(|(i, value)| {
+                    let reg_nr = self
+                        .store
+                        .get_value(&iter, 0)
+                        .get::<u32>()
+                        .unwrap_or(Some(0))
+                        .unwrap_or(0);
+                    if i as u32 == reg_nr {
+                        let val = (*value as u32).to_value();
+                        self.store.set_value(&iter, 2, &val);
+                        debug!("i: {} reg_nr: {} value: {}", i, reg_nr, value);
+                        self.store.iter_next(&iter);
+                    }
+                    *value
+                })
+                .collect();
+        }
     }
 }
 
