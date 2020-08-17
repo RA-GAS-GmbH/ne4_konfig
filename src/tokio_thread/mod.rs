@@ -30,6 +30,7 @@ pub enum TokioCommand {
     NewModbusAddress(Option<String>, u8, u8),
     Nullpunkt(Option<String>, u8),
     UpdateSensor(Option<String>, u8),
+    UpdateSensorRwregValues(Option<String>, u8),
 }
 
 /// State of the tokio thread
@@ -390,26 +391,27 @@ impl TokioThread {
                     match event {
                         TokioCommand::UpdateSensor(port, modbus_address) => {
                             info!("Execute event TokioCommand::UpdateSensor");
-                            #[cfg(feature = "ra-gas")]
                             ne4_client
-                                .read_holding_registers(
-                                    port.clone(),
+                                .read_input_registers(
+                                    port,
                                     modbus_address,
                                     ui_event_sender.clone(),
                                     state.clone(),
                                 )
                                 .await
                                 .expect("Could not start read registers loop");
-
-                            // ne4_client
-                            //     .read_input_registers(
-                            //         port,
-                            //         modbus_address,
-                            //         ui_event_sender.clone(),
-                            //         state.clone(),
-                            //     )
-                            //     .await
-                            //     .expect("Could not start read registers loop");
+                        }
+                        TokioCommand::UpdateSensorRwregValues(port, modbus_address) => {
+                            info!("Execute event TokioCommand::UpdateSensor");
+                            ne4_client
+                                .read_holding_registers(
+                                    port,
+                                    modbus_address,
+                                    ui_event_sender.clone(),
+                                    state.clone(),
+                                )
+                                .await
+                                .expect("Could not start read registers loop");
                         }
                         TokioCommand::Connect => {
                             info!("Execute event TokioCommand::Connect");

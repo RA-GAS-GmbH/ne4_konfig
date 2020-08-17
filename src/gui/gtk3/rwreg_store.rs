@@ -452,6 +452,7 @@ impl RwregStore {
 
     /// Update Treestore values with values received via modbus
     pub fn update_treestore(&self, ui: &Ui, values: &[u16]) {
+        debug!("{:?}", values);
         if let Some(iter) = self.store.get_iter_first() {
             let _: Vec<u16> = values
                 .iter()
@@ -463,10 +464,10 @@ impl RwregStore {
                         .get::<u32>()
                         .unwrap_or(Some(0))
                         .unwrap_or(0);
+                    debug!("i: {} reg_nr: {} value: {}", i, reg_nr, value);
                     if i as u32 == reg_nr {
                         let val = (*value as u32).to_value();
                         self.store.set_value(&iter, 2, &val);
-                        debug!("i: {} reg_nr: {} value: {}", i, reg_nr, value);
                         self.store.iter_next(&iter);
                     }
                     *value

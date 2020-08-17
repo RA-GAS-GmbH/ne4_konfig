@@ -322,9 +322,15 @@ fn ui_init(app: &gtk::Application) {
                         .try_send(TokioCommand::Connect)
                         .expect("Failed to send tokio command");
 
+                    // tokio_thread_sender
+                    //     .clone()
+                    //     .try_send(TokioCommand::UpdateSensor(port.clone(), modbus_address))
+                    //     .expect("Failed to send tokio command");
+
+                    #[cfg(feature = "ra-gas")]
                     tokio_thread_sender
                         .clone()
-                        .try_send(TokioCommand::UpdateSensor(port, modbus_address))
+                        .try_send(TokioCommand::UpdateSensorRwregValues(port.clone(), modbus_address))
                         .expect("Failed to send tokio command");
                 } else {
                     tokio_thread_sender
@@ -693,7 +699,7 @@ fn ui_init(app: &gtk::Application) {
                         }
                     }
                     UiCommand::UpdateSensorRwregValues(values) => {
-                        info!("Execute event UiCommand::UpdateSensorValues");
+                        info!("Execute event UiCommand::UpdateSensorRwregValues");
                         // show_info(&ui, "Not working jeat!");
                         debug!("{:?}", values);
                         match values {
