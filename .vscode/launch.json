@@ -1,0 +1,312 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'ne4_konfig'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=ne4_konfig"
+                ],
+                "filter": {
+                    "name": "ne4_konfig",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'ne4_konfig'",
+            "env": {
+                "RUST_LOG": "info",
+            }
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=ne4_konfig",
+                    "--package=ne4_konfig"
+                ],
+                "filter": {
+                    "name": "ne4_konfig",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'ne4_konfig' RA-GAS Version",
+            "env": {
+                "RUST_LOG": "info",
+            }
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=ne4_konfig",
+                    "--package=ne4_konfig",
+                    "--features=ra-gas"
+                ],
+                "filter": {
+                    "name": "ne4_konfig",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'ne4_konfig'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=ne4_konfig",
+                    "--package=ne4_konfig"
+                ],
+                "filter": {
+                    "name": "ne4_konfig",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'tokio-modbus-shared-ctx2'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=tokio-modbus-shared-ctx2",
+                    "--package=ne4_konfig"
+                ],
+                "filter": {
+                    "name": "tokio-modbus-shared-ctx2",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'tokio-modbus-shared-ctx'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=tokio-modbus-shared-ctx",
+                    "--package=ne4_konfig"
+                ],
+                "filter": {
+                    "name": "tokio-modbus-shared-ctx",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'tokio-modbus'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=tokio-modbus",
+                    "--package=ne4_konfig"
+                ],
+                "filter": {
+                    "name": "tokio-modbus",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'tokio-modbus'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=tokio-modbus",
+                    "--package=ne4_konfig"
+                ],
+                "filter": {
+                    "name": "tokio-modbus",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'scaffold'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=scaffold",
+                    "--package=ne4_konfig"
+                ],
+                "filter": {
+                    "name": "scaffold",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'scaffold'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=scaffold",
+                    "--package=ne4_konfig"
+                ],
+                "filter": {
+                    "name": "scaffold",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'csv'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=csv",
+                    "--package=ne4_konfig"
+                ],
+                "filter": {
+                    "name": "csv",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'csv'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=csv",
+                    "--package=ne4_konfig"
+                ],
+                "filter": {
+                    "name": "csv",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'nom'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=nom",
+                    "--package=ne4_konfig"
+                ],
+                "filter": {
+                    "name": "nom",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'nom'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=nom",
+                    "--package=ne4_konfig"
+                ],
+                "filter": {
+                    "name": "nom",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'treestore'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=treestore",
+                    "--package=ne4_konfig"
+                ],
+                "filter": {
+                    "name": "treestore",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'treestore'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=treestore",
+                    "--package=ne4_konfig"
+                ],
+                "filter": {
+                    "name": "treestore",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

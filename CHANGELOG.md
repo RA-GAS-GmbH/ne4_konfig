@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2020-08-20
+### Added
+- RA-GAS Version `--features="ra-gas"`
+- Rwreg Register können nun mit ausgelesen werden
+## Changed
+- Viel bessere Stabilität des Programms erreicht
+  - Wärend des Arbeitens mit den seriellen Schnittstellen wird nun viel mehr
+    auf die Stabilität des Programms geachtet. Das Programm stürzt nun viel
+    weniger ab.
+
 ## [v1.0.1] - 2020-06-26
 ### Added
 - 4-20mA Anzeige in der Sensoransicht
@@ -44,7 +54,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Gitlab CI benutzt nun das `rust:latest` Image für `cargo fmt` und die Tests
 
+## [v0.1.0-alpha] - 2020-04-29
+### Added
+- Erstes Release
+
 ## [v0.1.0] - 2020-04-29
 ### Added
 - Gitlab CI wird für Linux Builds und Tests verwendet
 - Appveyor CI wird für Windows Builds und Tests verwendet
+-
+
+[v1.0.1]: https://gitlab.com/RA-GAS-GmbH/ne4_konfig/-/tags/v1.0.1
+[v1.0.0]: https://gitlab.com/RA-GAS-GmbH/ne4_konfig/-/tags/v1.0.0
+[v0.3.0]: https://gitlab.com/RA-GAS-GmbH/ne4_konfig/-/releases#v0.3.0
+[v0.2.0]: https://gitlab.com/RA-GAS-GmbH/ne4_konfig/-/releases#v0.2.0
+[v0.1.0-alpha]: https://gitlab.com/RA-GAS-GmbH/ne4_konfig/-/releases#v0.1.0-alpha
+[v0.1.0]: https://gitlab.com/RA-GAS-GmbH/ne4_konfig/-/tags/v0.1.0
