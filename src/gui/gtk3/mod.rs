@@ -1,6 +1,6 @@
 use crate::tokio_thread;
 use crate::tokio_thread::{TokioCommand, TokioThread};
-use chrono::Utc;
+use chrono::Local;
 use gio::prelude::*;
 use glib::clone;
 use glib::{signal_handler_block, signal_handler_unblock};
@@ -83,6 +83,7 @@ pub enum UiCommand {
     NewWorkingMode(tokio::io::Result<()>),
     Nullpunkt(tokio::io::Result<()>),
     // Reconnect,
+    ShowInfo(String),
     UpdatePorts(Vec<String>),
     UpdateSensorType(String),
     UpdateSensorValue(u16),
@@ -322,16 +323,16 @@ fn ui_init(app: &gtk::Application) {
                         .try_send(TokioCommand::Connect)
                         .expect("Failed to send tokio command");
 
-                    // tokio_thread_sender
-                    //     .clone()
-                    //     .try_send(TokioCommand::UpdateSensor(port.clone(), modbus_address))
-                    //     .expect("Failed to send tokio command");
-
-                    #[cfg(feature = "ra-gas")]
                     tokio_thread_sender
                         .clone()
-                        .try_send(TokioCommand::UpdateSensorRwregValues(port.clone(), modbus_address))
+                        .try_send(TokioCommand::UpdateSensor(port.clone(), modbus_address))
                         .expect("Failed to send tokio command");
+
+                    // #[cfg(feature = "ra-gas")]
+                    // tokio_thread_sender
+                    //     .clone()
+                    //     .try_send(TokioCommand::UpdateSensorRwregValues(port.clone(), modbus_address))
+                    //     .expect("Failed to send tokio command");
                 } else {
                     tokio_thread_sender
                         .clone()
@@ -668,6 +669,9 @@ fn ui_init(app: &gtk::Application) {
                             &format!("Messgas: {:?}", &value),
                         );
                     }
+                    UiCommand::ShowInfo(msg) => {
+                        show_info(&ui, &msg);
+                    }
                     UiCommand::UpdateSensorValues(values) => {
                         info!("Execute event UiCommand::UpdateSensorValues");
                         // show_info(&ui, "Not working jeat!");
@@ -776,19 +780,19 @@ fn disable_ui_elements(ui: &Ui) {
 /// Show InfoBar Info
 ///
 /// FIXME: Not working! Revealed status can't set, message isn't shown
-fn _show_info(ui: &Ui, message: &str) {
+fn show_info(ui: &Ui, message: &str) {
     let content = &ui.infobar_info.get_content_area();
     let label = gtk::Label::new(None);
     label.set_text(message);
     content.add(&label);
 
-    &ui.infobar_info.show();
+    &ui.infobar_info.show_all();
     &ui.revealer_infobar_info.set_reveal_child(true);
 }
 /// Log messages to the status bar using the specific status context.
 fn log_status(ui: &Ui, context: StatusContext, message: &str) {
     if let Some(context_id) = ui.statusbar_contexts.get(&context) {
-        let timestamp = Utc::now().format("%Y-%m-%d %H:%M:%S");
+        let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S");
         let formatted_message = format!("[{}]: {}", timestamp, message);
         ui.statusbar_application
             .push(*context_id, &formatted_message);
