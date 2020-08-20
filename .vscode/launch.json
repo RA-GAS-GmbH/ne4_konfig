@@ -89,15 +89,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug example 'tokio-modbus-shared-ctx'",
+            "name": "Debug example 'tokio-modbus-shared-ctx2'",
             "cargo": {
                 "args": [
                     "build",
-                    "--example=tokio-modbus-shared-ctx",
+                    "--example=tokio-modbus-shared-ctx2",
                     "--package=ne4_konfig"
                 ],
                 "filter": {
-                    "name": "tokio-modbus-shared-ctx",
+                    "name": "tokio-modbus-shared-ctx2",
                     "kind": "example"
                 }
             },
