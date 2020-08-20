@@ -211,7 +211,7 @@ impl Ne4Client {
 
                     for (i, reg) in registers.iter_mut().enumerate() {
                         match timeout(
-                            Duration::from_millis(3000),
+                            Duration::from_millis(100),
                             ctx.read_holding_registers(i as u16, 1),
                         )
                         .await
@@ -221,29 +221,16 @@ impl Ne4Client {
                                 Err(e) => {
                                     ui_event_sender
                                         .clone()
-                                        .send(UiCommand::Disconnect)
-                                        .await
-                                        .expect("Failed to send Ui command");
-
-                                    ui_event_sender
-                                        .clone()
                                         .send(UiCommand::Error(format!(
-                                            "Register {} konnte nicht gelesen werden: {}",
+                                            "Ein Holding Register {} konnte nicht gelesen werden: {}",
                                             i,
                                             e.to_string()
                                         )))
                                         .await
                                         .expect("Failed to send Ui command");
-                                    break 'update;
                                 }
                             },
                             Err(_) => {
-                                ui_event_sender
-                                    .clone()
-                                    .send(UiCommand::Disconnect)
-                                    .await
-                                    .expect("Failed to send Ui command");
-
                                 ui_event_sender
                                     .clone()
                                     .send(UiCommand::Error(format!(
@@ -251,8 +238,6 @@ impl Ne4Client {
                                     )))
                                     .await
                                     .expect("Failed to send Ui command");
-
-                                break 'update;
                             }
                         };
                     }
@@ -301,7 +286,7 @@ impl Ne4Client {
 
                     for (i, reg) in registers.iter_mut().enumerate() {
                         match timeout(
-                            Duration::from_millis(3000),
+                            Duration::from_millis(100),
                             ctx.read_input_registers(i as u16, 1),
                         )
                         .await
@@ -311,29 +296,16 @@ impl Ne4Client {
                                 Err(e) => {
                                     ui_event_sender
                                         .clone()
-                                        .send(UiCommand::Disconnect)
-                                        .await
-                                        .expect("Failed to send Ui command");
-
-                                    ui_event_sender
-                                        .clone()
                                         .send(UiCommand::Error(format!(
-                                            "Register {} konnte nicht gelesen werden: {}",
+                                            "Ein Input Register {} konnte nicht gelesen werden: {}",
                                             i,
                                             e.to_string()
                                         )))
                                         .await
                                         .expect("Failed to send Ui command");
-                                    break 'update;
                                 }
                             },
                             Err(_) => {
-                                ui_event_sender
-                                    .clone()
-                                    .send(UiCommand::Disconnect)
-                                    .await
-                                    .expect("Failed to send Ui command");
-
                                 ui_event_sender
                                     .clone()
                                     .send(UiCommand::Error(format!(
@@ -341,8 +313,6 @@ impl Ne4Client {
                                     )))
                                     .await
                                     .expect("Failed to send Ui command");
-
-                                break 'update;
                             }
                         };
                     }
@@ -361,6 +331,31 @@ impl Ne4Client {
                 "No serial port found",
             ))
         }
+    }
+
+    /// Read holding and input registers sequenciell
+    ///
+    ///
+    async fn read_registers(
+        &self,
+        port: Option<String>,
+        modbus_address: u8,
+        ui_event_sender: Sender<UiCommand>,
+        // FIXME: Implement state in Ne4 Client
+        state: std::sync::Arc<tokio::sync::Mutex<TokioState>>,
+    ) -> tokio::io::Result<()> {
+        self.read_input_registers(
+            port.clone(),
+            modbus_address,
+            ui_event_sender.clone(),
+            state.clone(),
+        )
+        .await;
+
+        self.read_holding_registers(port, modbus_address, ui_event_sender, state)
+            .await;
+
+        Ok(())
     }
 }
 
@@ -392,7 +387,7 @@ impl TokioThread {
                         TokioCommand::UpdateSensor(port, modbus_address) => {
                             info!("Execute event TokioCommand::UpdateSensor");
                             ne4_client
-                                .read_input_registers(
+                                .read_registers(
                                     port,
                                     modbus_address,
                                     ui_event_sender.clone(),
@@ -401,6 +396,7 @@ impl TokioThread {
                                 .await
                                 .expect("Could not start read registers loop");
                         }
+                        // TODO: Remove this after UpdateSensor is refactored to call read_input and read_holding registers in sequence
                         TokioCommand::UpdateSensorRwregValues(port, modbus_address) => {
                             info!("Execute event TokioCommand::UpdateSensor");
                             ne4_client
@@ -446,6 +442,12 @@ impl TokioThread {
                         }
                         TokioCommand::Nullpunkt(port, modbus_address) => {
                             info!("Execute event TokioCommand::Nullpunkt");
+                            // TODO: Implement InfoBar here
+                            // ui_event_sender
+                            //     .clone()
+                            //     .send(UiCommand::ShowInfo("hi".to_string()))
+                            //     .await
+                            //     .expect("Failed to send Ui command");
                             ui_event_sender
                                 .clone()
                                 .send(UiCommand::Nullpunkt(
