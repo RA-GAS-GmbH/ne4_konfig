@@ -12,4 +12,6 @@ release-ra-gas:
 	docker start -ai ne4_konfig-build
 
 clean:
-	rm *.exe
+	rm -f *.exe
+	rm -f *.zip
+	rm -rf ne4_konfig-*
