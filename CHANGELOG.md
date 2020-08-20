@@ -8,9 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.5.0] - 2020-08-20
 ### Added
 - RA-GAS Version `--features="ra-gas"`
-- Rwreg Register werden nun mit ausgelesen
+- Rwreg Register können nun mit ausgelesen werden
 ## Changed
 - Viel bessere Stabilität des Programms erreicht
   - Wärend des Arbeitens mit den seriellen Schnittstellen wird nun viel mehr
@@ -60,7 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Gitlab CI wird für Linux Builds und Tests verwendet
 - Appveyor CI wird für Windows Builds und Tests verwendet
-- 
+-
 
 [v1.0.1]: https://gitlab.com/RA-GAS-GmbH/ne4_konfig/-/tags/v1.0.1
 [v1.0.0]: https://gitlab.com/RA-GAS-GmbH/ne4_konfig/-/tags/v1.0.0
