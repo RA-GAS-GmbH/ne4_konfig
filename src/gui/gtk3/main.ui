@@ -608,7 +608,7 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
                   <object class="GtkImage" id="image_delete">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="icon_name">gtk-delete</property>
+                    <property name="icon_name">edit-delete</property>
                   </object>
                 </child>
               </object>
@@ -712,6 +712,20 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
                         <property name="position">2</property>
                       </packing>
                     </child>
+                    <child>
+                      <object class="GtkCheckButton" id="check_button_mcs">
+                        <property name="label" translatable="yes">MCS Konfiguration?</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">False</property>
+                        <property name="draw_indicator">True</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="pack_type">end</property>
+                        <property name="position">4</property>
+                      </packing>
+                    </child>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -743,6 +757,7 @@ Author: Stefan Müller <s.mueller@zzeroo.com>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="halign">start</property>
+                        <property name="valign">end</property>
                       </object>
                       <packing>
                         <property name="expand">True</property>

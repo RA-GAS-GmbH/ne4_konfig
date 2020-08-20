@@ -48,6 +48,28 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Debug executable 'ne4_konfig' RA-GAS Version",
+            "env": {
+                "RUST_LOG": "info",
+            }
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=ne4_konfig",
+                    "--package=ne4_konfig",
+                    "--features=ra-gas"
+                ],
+                "filter": {
+                    "name": "ne4_konfig",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug unit tests in executable 'ne4_konfig'",
             "cargo": {
                 "args": [
@@ -67,15 +89,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug example 'tokio-modbus-shared-ctx'",
+            "name": "Debug example 'tokio-modbus-shared-ctx2'",
             "cargo": {
                 "args": [
                     "build",
-                    "--example=tokio-modbus-shared-ctx",
+                    "--example=tokio-modbus-shared-ctx2",
                     "--package=ne4_konfig"
                 ],
                 "filter": {
-                    "name": "tokio-modbus-shared-ctx",
+                    "name": "tokio-modbus-shared-ctx2",
                     "kind": "example"
                 }
             },

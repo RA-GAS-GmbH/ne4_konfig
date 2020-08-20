@@ -1,15 +1,16 @@
+use crate::gui::gtk3::Ui;
+/// Treestore and logic for Rwreg's
 use gio::prelude::*;
 use gtk::prelude::*;
-use std::env::args;
 
-struct RwregStore {
+pub struct RwregStore {
     store: gtk::TreeStore,
 }
 
 impl RwregStore {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let store = gtk::TreeStore::new(&[
-            glib::Type::I32,
+            glib::Type::U32,
             glib::Type::String,
             glib::Type::String,
             glib::Type::String,
@@ -18,7 +19,7 @@ impl RwregStore {
         RwregStore { store }
     }
 
-    fn fill_treestore(&self) {
+    pub fn fill_treestore(&self) {
         self.store.insert_with_values(
             None,
             None,
@@ -37,7 +38,7 @@ impl RwregStore {
             &[
                 &2,
                 &"0 … 10000 [11111]",
-                &"0 … 10000 ppm",
+                &"",
                 &"Messwertvorgabe für Testzwecke",
             ],
         );
@@ -48,7 +49,7 @@ impl RwregStore {
             &[
                 &3,
                 &"0 … 2500 [11111]",
-                &"0 … 25,00 mA",
+                &"",
                 &"Ausgangsstrom vorgeben für Testzwecke",
             ],
         );
@@ -59,7 +60,7 @@ impl RwregStore {
             &[
                 &4,
                 &"-200 … 600 [11111]",
-                &"-20,0 … 60,0 °C",
+                &"",
                 &"Temperatur vorgeben für Testzwecke",
             ],
         );
@@ -73,7 +74,7 @@ impl RwregStore {
             None,
             None,
             &[0, 1, 2, 3],
-            &[&11, &0, &0, &"Sensorwert Nullpunkt = 0	*"],
+            &[&11, &0, &"", &"Sensorwert Nullpunkt = 0	*"],
         );
         self.store.insert_with_values(
             None,
@@ -93,7 +94,7 @@ impl RwregStore {
             &[
                 &13,
                 &"0 … 10000",
-                &"0 … 10000 ppm",
+                &"",
                 &"Sensorwert im Kalibrierpunkt (bei Endwert) 	*",
             ],
         );
@@ -104,7 +105,7 @@ impl RwregStore {
             &[
                 &15,
                 &"0 … 10000 [0]",
-                &"0 … 10000 ppm [0 ppm]",
+                &"",
                 &"Messwert unten für Ausgangsstrom unten	*",
             ],
         );
@@ -115,7 +116,7 @@ impl RwregStore {
             &[
                 &16,
                 &"0 … 2500 [400]",
-                &"0 … 25,00 mA [4 mA]",
+                &"",
                 &"Ausgangsstrom im unteren Punkt	*",
             ],
         );
@@ -126,7 +127,7 @@ impl RwregStore {
             &[
                 &17,
                 &"0 … 10000 [1000]",
-                &"0 … 10000 ppm [1000ppm]",
+                &"",
                 &"Messwert oben für Ausgangsstrom oben	*",
             ],
         );
@@ -137,7 +138,7 @@ impl RwregStore {
             &[
                 &16,
                 &"0 … 2500 [2000]",
-                &"0 … 25,00 mA [20 mA]",
+                &"",
                 &"Ausgangsstrom im oberen Punkt	*",
             ],
         );
@@ -213,7 +214,7 @@ impl RwregStore {
             &[
                 &30,
                 &"50 ... 200",
-                &"0,50 … 2,00",
+                &"",
                 &"Kennlinie vom Sensorhersteller bei -20°C	*",
             ],
         );
@@ -224,7 +225,7 @@ impl RwregStore {
             &[
                 &31,
                 &"50 ... 200",
-                &"0,50 … 2,00",
+                &"",
                 &"Kennlinie vom Sensorhersteller bei 0°C	*",
             ],
         );
@@ -235,7 +236,7 @@ impl RwregStore {
             &[
                 &32,
                 &"50 ... 200",
-                &"0,50 … 2,00",
+                &"",
                 &"Kennlinie vom Sensorhersteller bei 10°C	*",
             ],
         );
@@ -246,7 +247,7 @@ impl RwregStore {
             &[
                 &33,
                 &"50 ... 200",
-                &"0,50 … 2,00",
+                &"",
                 &"Kennlinie vom Sensorhersteller bei 20°C	*",
             ],
         );
@@ -257,7 +258,7 @@ impl RwregStore {
             &[
                 &34,
                 &"50 ... 200",
-                &"0,50 … 2,00",
+                &"",
                 &"Kennlinie vom Sensorhersteller bei 30°C	*",
             ],
         );
@@ -268,7 +269,7 @@ impl RwregStore {
             &[
                 &35,
                 &"50 ... 200",
-                &"0,50 … 2,00",
+                &"",
                 &"Kennlinie vom Sensorhersteller bei 40°C	*",
             ],
         );
@@ -279,7 +280,7 @@ impl RwregStore {
             &[
                 &36,
                 &"50 ... 200",
-                &"0,50 … 2,00",
+                &"",
                 &"Kennlinie vom Sensorhersteller bei 60°C	*",
             ],
         );
@@ -382,9 +383,9 @@ impl RwregStore {
         );
     }
 
-    fn build_ui(&self) -> gtk::ScrolledWindow {
-        self.fill_treestore();
-
+    pub fn build_ui(&self) -> gtk::ScrolledWindow {
+        // self.fill_treestore();
+        //
         let sortable_store = gtk::TreeModelSort::new(&self.store);
         let treeview = gtk::TreeView::with_model(&sortable_store);
 
@@ -448,8 +449,35 @@ impl RwregStore {
 
         scrolled_window
     }
+
+    /// Update Treestore values with values received via modbus
+    pub fn update_treestore(&self, ui: &Ui, values: &[u16]) {
+        debug!("{:?}", values);
+        if let Some(iter) = self.store.get_iter_first() {
+            let _: Vec<u16> = values
+                .iter()
+                .enumerate()
+                .map(|(i, value)| {
+                    let reg_nr = self
+                        .store
+                        .get_value(&iter, 0)
+                        .get::<u32>()
+                        .unwrap_or(Some(0))
+                        .unwrap_or(0);
+                    debug!("i: {} reg_nr: {} value: {}", i, reg_nr, value);
+                    if i as u32 == reg_nr {
+                        let val = (*value as u32).to_value();
+                        self.store.set_value(&iter, 2, &val);
+                        self.store.iter_next(&iter);
+                    }
+                    *value
+                })
+                .collect();
+        }
+    }
 }
 
+/// callback called if a editable cell is updated with new value
 fn edit_cell(
     cell: &gtk::CellRendererText,
     path: &gtk::TreePath,
@@ -458,35 +486,7 @@ fn edit_cell(
 ) {
     if let Some(iter) = model.get_iter(&path) {
         let old_value = model.get_value(&iter, 2);
-        println!("{:?}", old_value.get::<String>());
+        // debug!("{:?}", old_value.get::<String>());
         model.set_value(&iter, 2, &new_text.to_value());
     }
-}
-
-fn build_ui(application: &gtk::Application) {
-    let window = gtk::ApplicationWindow::new(application);
-
-    window.set_title("Tree View/ Model Test");
-    window.set_position(gtk::WindowPosition::Center);
-    window.set_default_size(1024, 600);
-
-    let rwreg_store = RwregStore::new();
-    let rwreg_window = rwreg_store.build_ui();
-    window.add(&rwreg_window);
-
-    window.show_all();
-}
-
-fn main() {
-    let application = gtk::Application::new(
-        Some("com.gaswarnanlagen.example.treestore"),
-        gio::ApplicationFlags::empty(),
-    )
-    .expect("Initialization failed....");
-
-    application.connect_activate(|app| {
-        build_ui(app);
-    });
-
-    application.run(&args().collect::<Vec<_>>());
 }

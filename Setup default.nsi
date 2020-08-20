@@ -16,8 +16,8 @@ SetCompressor /SOLID lzma
 ;--------------------------------
 ;Configuration
 !define ARCH $%ARCH%
-!define NAME_SUFFIX "-ra-gas"
-!define ICON_NAME_SUFFIX " (interne Version)"
+!define NAME_SUFFIX ""
+!define ICON_NAME_SUFFIX ""
 
 !ifndef OUTFILE
   !define OUTFILE "${CARGO_PKG_NAME}${NAME_SUFFIX}-${CARGO_PKG_VERSION}-windows-${ARCH}-setup.exe"

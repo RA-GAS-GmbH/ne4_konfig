@@ -1,17 +1,19 @@
 use crate::tokio_thread;
 use crate::tokio_thread::{TokioCommand, TokioThread};
-use chrono::Utc;
+use chrono::Local;
 use gio::prelude::*;
 use glib::clone;
 use glib::{signal_handler_block, signal_handler_unblock};
 use gtk::prelude::*;
 use gtk::{Application, InfoBarExt};
+use rwreg_store::RwregStore;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
 #[macro_use]
 pub mod macros;
+pub mod rwreg_store;
 pub mod treestore_values;
 
 const PKG_VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -27,7 +29,8 @@ pub struct Ui {
     button_nullpunkt: gtk::Button,
     button_reset: gtk::Button,
     button_sensor_working_mode: gtk::Button,
-    check_button_mcs: Option<gtk::CheckButton>,
+    #[cfg(feature = "ra-gas")]
+    check_button_mcs: gtk::CheckButton,
     combo_box_text_ports_changed_signal: glib::SignalHandlerId,
     combo_box_text_ports_map: Rc<RefCell<HashMap<String, u32>>>,
     combo_box_text_ports: gtk::ComboBoxText,
@@ -42,6 +45,25 @@ pub struct Ui {
     statusbar_application: gtk::Statusbar,
     statusbar_contexts: HashMap<StatusContext, u32>,
     toggle_button_connect: gtk::ToggleButton,
+    #[cfg(feature = "ra-gas")]
+    rwreg_store: RwregStore,
+}
+
+impl Ui {
+    fn select_port(&self, num: u32) {
+        // Restore selected serial interface
+        signal_handler_block(
+            &self.combo_box_text_ports,
+            &self.combo_box_text_ports_changed_signal,
+        );
+        &self.combo_box_text_ports.set_active(Some(num));
+        signal_handler_unblock(
+            &self.combo_box_text_ports,
+            &self.combo_box_text_ports_changed_signal,
+        );
+        &self.combo_box_text_ports.set_sensitive(true);
+        &self.toggle_button_connect.set_sensitive(true);
+    }
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -53,17 +75,20 @@ enum StatusContext {
 #[derive(Debug)]
 pub enum UiCommand {
     DisableConnectUiElements,
-    Error(String),
     Disconnect,
     EnableConnectUiElements,
+    Error(String),
+    Messgas(tokio::io::Result<()>),
+    NewModbusAddress(tokio::io::Result<()>),
+    NewWorkingMode(tokio::io::Result<()>),
+    Nullpunkt(tokio::io::Result<()>),
+    // Reconnect,
+    ShowInfo(String),
     UpdatePorts(Vec<String>),
     UpdateSensorType(String),
     UpdateSensorValue(u16),
     UpdateSensorValues(Result<Vec<u16>, mio_serial::Error>),
-    NewWorkingMode(tokio::io::Result<()>),
-    NewModbusAddress(tokio::io::Result<()>),
-    Nullpunkt(tokio::io::Result<()>),
-    Messgas(tokio::io::Result<()>),
+    UpdateSensorRwregValues(Result<Vec<u16>, mio_serial::Error>),
 }
 
 pub fn launch() {
@@ -101,38 +126,42 @@ fn ui_init(app: &gtk::Application) {
     let infobar_error: gtk::InfoBar = build!(builder, "infobar_error");
     let infobar_question: gtk::InfoBar = build!(builder, "infobar_question");
 
-    let button_close_infobar_info: gtk::Button = infobar_info
-        .add_button("Ok", gtk::ResponseType::Close)
-        .unwrap();
-    let _ = button_close_infobar_info.connect_clicked(clone!(
-    @strong infobar_info
-    => move |_| {
-        &infobar_info.hide();
-    }));
-    let button_close_infobar_warning: gtk::Button = infobar_warning
-        .add_button("Ok", gtk::ResponseType::Close)
-        .unwrap();
-    let _ = button_close_infobar_warning.connect_clicked(clone!(
-    @strong infobar_warning
-    => move |_| {
-        &infobar_warning.hide();
-    }));
-    let button_close_infobar_error: gtk::Button = infobar_error
-        .add_button("Ok", gtk::ResponseType::Close)
-        .unwrap();
-    let _ = button_close_infobar_error.connect_clicked(clone!(
-    @strong infobar_error
-    => move |_| {
-        &infobar_error.hide();
-    }));
-    let button_close_infobar_question: gtk::Button = infobar_question
-        .add_button("Ok", gtk::ResponseType::Close)
-        .unwrap();
-    let _ = button_close_infobar_question.connect_clicked(clone!(
-    @strong infobar_question
-    => move |_| {
-        &infobar_question.hide();
-    }));
+    // Infobar callbacks
+    if let Some(button_close_infobar_info) = infobar_info.add_button("Ok", gtk::ResponseType::Close)
+    {
+        let _ = button_close_infobar_info.connect_clicked(clone!(
+        @strong infobar_info
+        => move |_| {
+            &infobar_info.hide();
+        }));
+    }
+    if let Some(button_close_infobar_warning) =
+        infobar_warning.add_button("Ok", gtk::ResponseType::Close)
+    {
+        let _ = button_close_infobar_warning.connect_clicked(clone!(
+        @strong infobar_warning
+        => move |_| {
+            &infobar_warning.hide();
+        }));
+    }
+    if let Some(button_close_infobar_error) =
+        infobar_error.add_button("Ok", gtk::ResponseType::Close)
+    {
+        let _ = button_close_infobar_error.connect_clicked(clone!(
+        @strong infobar_error
+        => move |_| {
+            &infobar_error.hide();
+        }));
+    }
+    if let Some(button_close_infobar_question) =
+        infobar_question.add_button("Ok", gtk::ResponseType::Close)
+    {
+        let _ = button_close_infobar_question.connect_clicked(clone!(
+        @strong infobar_question
+        => move |_| {
+            &infobar_question.hide();
+        }));
+    }
 
     // Statusbar
     let statusbar_application: gtk::Statusbar = build!(builder, "statusbar_application");
@@ -171,6 +200,9 @@ fn ui_init(app: &gtk::Application) {
         combo_box_text_sensor_working_mode.append(Some(&id.to_string()), &name);
     }
 
+    // Notebook
+    let notebook_sensor: gtk::Notebook = build!(builder, "notebook_sensor");
+
     // Modbus Adresse
     let entry_modbus_address: gtk::Entry = build!(builder, "entry_modbus_address");
     let entry_new_modbus_address: gtk::Entry = build!(builder, "entry_new_modbus_address");
@@ -186,6 +218,18 @@ fn ui_init(app: &gtk::Application) {
 
     // ListStore Sensor Values
     let list_store_sensor: gtk::ListStore = build!(builder, "list_store_sensor");
+
+    // Rwreg
+    // This has to be declared outside of the following feature-block,
+    // because the Ui struct wouldn't recognize the variable `rwreg_store` otherwise.
+    let rwreg_store = RwregStore::new();
+    rwreg_store.fill_treestore();
+    #[cfg(feature = "ra-gas")]
+    {
+        let rwreg_window = rwreg_store.build_ui();
+        let label = gtk::Label::new(Some("Rwreg Lese/Schreib(Read/Write)-Register"));
+        notebook_sensor.append_page(&rwreg_window, Some(&label));
+    }
 
     let toggle_button_connect: gtk::ToggleButton = build!(builder, "toggle_button_connect");
     let label_sensor_value_value: gtk::Label = build!(builder, "label_sensor_value_value");
@@ -209,14 +253,7 @@ fn ui_init(app: &gtk::Application) {
     about_dialog.set_version(Some(PKG_VERSION));
     about_dialog.set_comments(Some(PKG_DESCRIPTION));
 
-    let mut check_button_mcs: Option<gtk::CheckButton> = None;
-    if cfg!(feature = "ra-gas") {
-        let hbox_new_modbus_address: gtk::Box = build!(builder, "hbox_new_modbus_address");
-        let button_mcs = gtk::CheckButton::with_label("MCS");
-        hbox_new_modbus_address.pack_end(&button_mcs, false, false, 0);
-        hbox_new_modbus_address.reorder_child(&button_mcs, 1);
-        check_button_mcs = Some(button_mcs);
-    }
+    let mut check_button_mcs: gtk::CheckButton = build!(builder, "check_button_mcs");
 
     application_window.set_application(Some(app));
 
@@ -288,8 +325,14 @@ fn ui_init(app: &gtk::Application) {
 
                     tokio_thread_sender
                         .clone()
-                        .try_send(TokioCommand::UpdateSensor(port, modbus_address))
+                        .try_send(TokioCommand::UpdateSensor(port.clone(), modbus_address))
                         .expect("Failed to send tokio command");
+
+                    // #[cfg(feature = "ra-gas")]
+                    // tokio_thread_sender
+                    //     .clone()
+                    //     .try_send(TokioCommand::UpdateSensorRwregValues(port.clone(), modbus_address))
+                    //     .expect("Failed to send tokio command");
                 } else {
                     tokio_thread_sender
                         .clone()
@@ -424,7 +467,8 @@ fn ui_init(app: &gtk::Application) {
         button_nullpunkt,
         button_reset,
         button_sensor_working_mode,
-        check_button_mcs,
+        #[cfg(feature = "ra-gas")]
+        check_button_mcs: check_button_mcs.clone(),
         combo_box_text_ports_changed_signal,
         combo_box_text_ports_map,
         combo_box_text_ports,
@@ -439,9 +483,15 @@ fn ui_init(app: &gtk::Application) {
         statusbar_application,
         statusbar_contexts: context_map,
         toggle_button_connect,
+        #[cfg(feature = "ra-gas")]
+        rwreg_store,
     };
 
     application_window.show_all();
+
+    if cfg!(not(feature = "ra-gas")) {
+        check_button_mcs.set_visible(false);
+    }
 
     // future on main thread has access to UI
     let future = {
@@ -475,7 +525,7 @@ fn ui_init(app: &gtk::Application) {
                         &ui.combo_box_text_sensor_working_mode.set_sensitive(true);
                         &ui.entry_modbus_address.set_sensitive(true);
                         &ui.button_reset.set_sensitive(true);
-
+                        // FIXME: Check if this is needed
                         tokio_thread_sender
                             .clone()
                             .try_send(TokioCommand::Disconnect)
@@ -504,8 +554,21 @@ fn ui_init(app: &gtk::Application) {
                             &format!("Error: {:?}", e),
                         );
                     }
+                    // UiCommand::Reconnect => {
+                    //     tokio_thread_sender
+                    //         .clone()
+                    //         .try_send(TokioCommand::Connect)
+                    //         .expect("Failed to send tokio command");
+                    //     log_status(
+                    //         &ui,
+                    //         StatusContext::PortOperation,
+                    //         &format!("Neuverbindung!"),
+                    //     );
+                    // }
                     UiCommand::UpdatePorts(ports) => {
                         info!("Execute event UiCommand::UpdatePorts: {:?}", ports);
+                        let active_port = ui.combo_box_text_ports.get_active().unwrap_or(0);
+                        let old_num_ports = ui.combo_box_text_ports_map.borrow().len();
                         // Update the port listing and other UI elements
                         ui.combo_box_text_ports.remove_all();
                         ui.combo_box_text_ports_map.borrow_mut().clear();
@@ -518,33 +581,54 @@ fn ui_init(app: &gtk::Application) {
                             ui.combo_box_text_ports.set_sensitive(false);
                             ui.toggle_button_connect.set_sensitive(false);
                         } else {
-                            enable_ui_elements(&ui);
                             for (i, p) in (0u32..).zip(ports.clone().into_iter()) {
                                 ui.combo_box_text_ports.append(None, &p);
                                 ui.combo_box_text_ports_map.borrow_mut().insert(p, i);
                             }
-                            signal_handler_block(
-                                &ui.combo_box_text_ports,
-                                &ui.combo_box_text_ports_changed_signal,
+                            // More or Less ports
+                            let num_ports = ui.combo_box_text_ports_map.borrow().len();
+                            debug!(
+                                "current ports: {}, old num ports: {}",
+                                num_ports, old_num_ports
                             );
-                            ui.combo_box_text_ports.set_active(Some(0));
-                            signal_handler_unblock(
-                                &ui.combo_box_text_ports,
-                                &ui.combo_box_text_ports_changed_signal,
-                            );
-                            ui.combo_box_text_ports.set_sensitive(true);
-                            ui.toggle_button_connect.set_sensitive(true);
-                        }
+                            // serial ports lost
+                            if num_ports < old_num_ports {
+                                tokio_thread_sender
+                                    .clone()
+                                    .try_send(TokioCommand::Disconnect)
+                                    .expect("Faild to send tokio command");
 
-                        log_status(
-                            &ui,
-                            StatusContext::PortOperation,
-                            &format!(
-                                "Ports found: {:?}; ports_map: {:?}",
-                                ports,
-                                &ui.combo_box_text_ports_map.borrow()
-                            ),
-                        );
+                                // Restore selected serial interface
+                                ui.select_port(0);
+
+                                // Tell the user
+                                log_status(
+                                    &ui,
+                                    StatusContext::PortOperation,
+                                    &format!(
+                                        "Schnittstelle verloren! Aktuelle Schnittstellen: {:?}",
+                                        ports
+                                    ),
+                                );
+                            // New serial port found
+                            } else if num_ports > old_num_ports {
+                                // Enable graphical elements
+                                enable_ui_elements(&ui);
+
+                                // Restore selected serial interface
+                                ui.select_port(active_port + 1);
+
+                                // Tell the user
+                                log_status(
+                                    &ui,
+                                    StatusContext::PortOperation,
+                                    &format!("Neue Schnittstelle gefunden: {:?}", ports),
+                                );
+                            } else if num_ports == old_num_ports {
+                                // Restore selected serial interface
+                                ui.select_port(active_port);
+                            }
+                        }
                     }
                     // FIXME: kann weg
                     UiCommand::UpdateSensorValue(value) => {
@@ -556,62 +640,6 @@ fn ui_init(app: &gtk::Application) {
                         //     StatusContext::PortOperation,
                         //     &format!("Update Sensor Value: {:?}", &value),
                         // );
-                    }
-                    UiCommand::UpdateSensorValues(values) => {
-                        info!("Execute event UiCommand::UpdateSensorValues");
-                        // show_info(&ui, "Not working jeat!");
-                        debug!("{:?}", values);
-                        match values {
-                            Ok(values) => {
-                                &ui.combo_box_text_sensor_working_mode
-                                    .set_active_id(Some(&values[1].to_string()));
-                                &ui.label_sensor_value_value.set_text(&values[2].to_string());
-                                let sensor_ma: f32 = values[3] as f32 / 100.0;
-                                let sensor_ma = format!("{:.02}", sensor_ma);
-                                &ui.label_sensor_ma_value.set_text(&sensor_ma);
-                                if let Some(iter) = &ui.list_store_sensor.get_iter_first() {
-                                    let _: Vec<u32> = values
-                                        .iter()
-                                        .enumerate()
-                                        .map(|(i, val)| {
-                                            let reg = &ui
-                                                .list_store_sensor
-                                                .get_value(&iter, 0)
-                                                .get::<u32>()
-                                                .unwrap_or(Some(0))
-                                                .unwrap_or(0);
-                                            // create the glib::value::Value from a u16 this is complicated (see supported types: https://gtk-rs.org/docs/glib/value/index.html)
-                                            let val = (*val as u32).to_value();
-                                            if i as u32 == *reg {
-                                                &ui.list_store_sensor.set_value(&iter, 1, &val);
-                                                &ui.list_store_sensor.iter_next(&iter);
-                                            }
-                                            0
-                                        })
-                                        .collect();
-                                    // Status log
-                                    log_status(
-                                        &ui,
-                                        StatusContext::PortOperation,
-                                        &format!("Sensor Update OK"),
-                                    );
-                                } else {
-                                    log_status(
-                                        &ui,
-                                        StatusContext::Error,
-                                        &format!("Error while iterating Sensor list"),
-                                    );
-                                }
-                            }
-                            Err(err) => {
-                                // Status log
-                                log_status(
-                                    &ui,
-                                    StatusContext::Error,
-                                    &format!("Error while Sensor Update: {}", err),
-                                );
-                            }
-                        }
                     }
                     UiCommand::NewModbusAddress(value) => {
                         log_status(
@@ -640,6 +668,59 @@ fn ui_init(app: &gtk::Application) {
                             StatusContext::PortOperation,
                             &format!("Messgas: {:?}", &value),
                         );
+                    }
+                    UiCommand::ShowInfo(msg) => {
+                        show_info(&ui, &msg);
+                    }
+                    UiCommand::UpdateSensorValues(values) => {
+                        info!("Execute event UiCommand::UpdateSensorValues");
+                        // show_info(&ui, "Not working jeat!");
+                        debug!("{:?}", values);
+                        match values {
+                            Ok(values) => {
+                                // Update Sensor Typ
+                                &ui.label_sensor_type_value
+                                    .set_text("RA-GAS GmbH - NE4_MOD_BUS");
+                                // Update Auswahlfeld Arbeitsweise
+                                &ui.combo_box_text_sensor_working_mode
+                                    .set_active_id(Some(&values[1].to_string()));
+                                // Update Sensor Wert
+                                &ui.label_sensor_value_value
+                                    .set_text(&sanitize_sensor_value(&values));
+                                // Update mA Wert
+                                &ui.label_sensor_ma_value.set_text(&sensor_ma(&values));
+                                // Update TreeStore
+                                update_treestore(&ui, &values);
+                            }
+                            Err(err) => {
+                                // Status log
+                                log_status(
+                                    &ui,
+                                    StatusContext::Error,
+                                    &format!("Error while Sensor Update: {}", err),
+                                );
+                            }
+                        }
+                    }
+                    UiCommand::UpdateSensorRwregValues(values) => {
+                        info!("Execute event UiCommand::UpdateSensorRwregValues");
+                        // show_info(&ui, "Not working jeat!");
+                        debug!("{:?}", values);
+                        match values {
+                            Ok(values) => {
+                                #[cfg(feature = "ra-gas")]
+                                // Update TreeStore
+                                &ui.rwreg_store.update_treestore(&ui, &values);
+                            }
+                            Err(err) => {
+                                // Status log
+                                log_status(
+                                    &ui,
+                                    StatusContext::Error,
+                                    &format!("Error while Sensor Update: {}", err),
+                                );
+                            }
+                        }
                     }
                 }
             }
@@ -670,10 +751,8 @@ fn enable_ui_elements(ui: &Ui) {
     ui.button_new_modbus_address.set_sensitive(true);
     ui.button_sensor_working_mode.set_sensitive(true);
 
-    match ui.check_button_mcs {
-        Some(ref button) => button.set_sensitive(true),
-        None => {}
-    }
+    #[cfg(feature = "ra-gas")]
+    ui.check_button_mcs.set_sensitive(true);
 }
 
 /// Disable UI elements
@@ -694,28 +773,26 @@ fn disable_ui_elements(ui: &Ui) {
     ui.button_new_modbus_address.set_sensitive(false);
     ui.button_sensor_working_mode.set_sensitive(false);
 
-    match ui.check_button_mcs {
-        Some(ref button) => button.set_sensitive(false),
-        None => {}
-    }
+    #[cfg(feature = "ra-gas")]
+    ui.check_button_mcs.set_sensitive(false);
 }
 
 /// Show InfoBar Info
 ///
 /// FIXME: Not working! Revealed status can't set, message isn't shown
-fn _show_info(ui: &Ui, message: &str) {
+fn show_info(ui: &Ui, message: &str) {
     let content = &ui.infobar_info.get_content_area();
     let label = gtk::Label::new(None);
     label.set_text(message);
     content.add(&label);
 
-    &ui.infobar_info.show();
+    &ui.infobar_info.show_all();
     &ui.revealer_infobar_info.set_reveal_child(true);
 }
 /// Log messages to the status bar using the specific status context.
 fn log_status(ui: &Ui, context: StatusContext, message: &str) {
     if let Some(context_id) = ui.statusbar_contexts.get(&context) {
-        let timestamp = Utc::now().format("%Y-%m-%d %H:%M:%S");
+        let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S");
         let formatted_message = format!("[{}]: {}", timestamp, message);
         ui.statusbar_application
             .push(*context_id, &formatted_message);
@@ -743,5 +820,59 @@ fn scan_ports(
         combo_box_text_ports.append(None, msg);
         combo_box_text_ports.set_active(Some(0));
         combo_box_text_ports.set_sensitive(false);
+    }
+}
+
+/// Sensorwert nachbearbeiten
+///
+/// Ich habe auf eine Nachbearbeitung ersteinmal verzichtet, da dies ein Programmfehler im Sensor
+/// ist. Laut Dokumentation liefert der Sensor an diese Stelle nur Werte zwichen 0...10000
+/// 65535 ist definitiv zu hoch.
+fn sanitize_sensor_value(values: &[u16]) -> String {
+    let value = values[2];
+    value.to_string()
+}
+
+/// mA Werte berechnen
+fn sensor_ma(values: &[u16]) -> String {
+    let sensor_ma: f32 = values[3] as f32 / 100.0;
+    let sensor_ma = format!("{:.02}", sensor_ma);
+    sensor_ma
+}
+
+/// Update Treestore
+fn update_treestore(ui: &Ui, values: &[u16]) {
+    if let Some(iter) = &ui.list_store_sensor.get_iter_first() {
+        let _: Vec<u32> = values
+            .iter()
+            .enumerate()
+            .map(|(i, val)| {
+                let reg = &ui
+                    .list_store_sensor
+                    .get_value(&iter, 0)
+                    .get::<u32>()
+                    .unwrap_or(Some(0))
+                    .unwrap_or(0);
+                // create the glib::value::Value from a u16 this is complicated (see supported types: https://gtk-rs.org/docs/glib/value/index.html)
+                let val = (*val as u32).to_value();
+                if i as u32 == *reg {
+                    &ui.list_store_sensor.set_value(&iter, 1, &val);
+                    &ui.list_store_sensor.iter_next(&iter);
+                }
+                0
+            })
+            .collect();
+        // Status log
+        log_status(
+            &ui,
+            StatusContext::PortOperation,
+            &format!("Sensor Update OK"),
+        );
+    } else {
+        log_status(
+            &ui,
+            StatusContext::Error,
+            &format!("Error while iterating Sensor list"),
+        );
     }
 }

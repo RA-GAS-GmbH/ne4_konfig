@@ -146,7 +146,7 @@ mod gui {
 
             // Now build the UI
             let glade_str = include_str!("../src/gui/gtk3/main.ui");
-            let builder = gtk::Builder::new_from_string(glade_str);
+            let builder = gtk::Builder::from_string(glade_str);
             let application_window: gtk::ApplicationWindow = build!(builder, "application_window");
 
             let button_nullpunkt: gtk::Button = build!(builder, "button_nullpunkt");
