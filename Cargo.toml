@@ -1,6 +1,6 @@
 [package]
 name = "ne4_konfig"
-version = "1.0.2"
+version = "1.5.0"
 authors = ["Stefan Müller <zzeroo> <co@zzeroo.com>"]
 license = "GPL-3.0"
 readme = "README.md"
